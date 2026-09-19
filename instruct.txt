@@ -1,0 +1,7 @@
+ctrl + shift + O = find words in code
+
+
+git init
+git branch -M main
+git remote add origin https://github.com/anuragmid457-tech/Lyrics-Analyzer-2.0.git
+git pull origin main --allow-unrelated-histories

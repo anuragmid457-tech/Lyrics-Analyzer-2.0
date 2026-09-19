@@ -1,0 +1,3617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>LYRIQ — Music Expression Intelligence</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=Noto+Sans+Bengali:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='Review.css') }}">
+
+<style>
+
+:root{
+    --bg:#080a0f;
+    --surface:#10141b;
+    --surface2:#151a22;
+    --surface3:#1c222c;
+
+    --line:#272e39;
+
+    --text:#eeeae2;
+    --soft:#c6cad1;
+    --muted:#8992a1;
+
+    --gold:#d8ad55;
+    --teal:#69a99e;
+    --violet:#8c81c8;
+    --blue:#668fc0;
+    --rose:#c98293;
+    --red:#c86c69;
+
+    --radius:16px;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    margin:0;
+
+    background:
+        radial-gradient(
+            circle at 80% 5%,
+            rgba(216,173,85,.08),
+            transparent 30rem
+        ),
+        radial-gradient(
+            circle at 5% 40%,
+            rgba(105,169,158,.05),
+            transparent 25rem
+        ),
+        var(--bg);
+
+    color:var(--text);
+
+    font-family:
+        "DM Sans",
+        "Noto Sans Bengali",
+        system-ui,
+        sans-serif;
+
+    line-height:1.55;
+}
+
+button,
+input,
+textarea,
+select{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+.shell{
+    max-width:1240px;
+    margin:auto;
+    padding:0 28px 80px;
+}
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.nav{
+    height:76px;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    border-bottom:1px solid var(--line);
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:.18em;
+}
+
+.logo-mark{
+    width:30px;
+    height:30px;
+
+    border:1px solid var(--gold);
+    border-radius:50%;
+
+    position:relative;
+}
+
+.logo-mark::before{
+    content:"";
+
+    position:absolute;
+
+    width:15px;
+    height:15px;
+
+    border:1px solid var(--gold);
+    border-radius:50%;
+
+    left:50%;
+    top:50%;
+
+    transform:translate(-50%,-50%);
+}
+
+.logo-mark::after{
+    content:"";
+
+    position:absolute;
+
+    width:5px;
+    height:5px;
+
+    background:var(--gold);
+    border-radius:50%;
+
+    left:50%;
+    top:50%;
+
+    transform:translate(-50%,-50%);
+}
+
+.nav-links{
+    display:flex;
+    gap:28px;
+
+    color:var(--muted);
+
+    font-size:13px;
+}
+
+.nav-links a{
+    text-decoration:none;
+    color:inherit;
+}
+
+.nav-links a:hover{
+    color:var(--text);
+}
+
+/* =========================
+   HERO
+========================= */
+
+.hero{
+    padding:90px 0 75px;
+    max-width:950px;
+}
+
+.eyebrow{
+    color:var(--gold);
+
+    font-size:11px;
+    font-weight:600;
+
+    letter-spacing:.22em;
+    text-transform:uppercase;
+}
+
+.hero h1{
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:clamp(55px,8vw,96px);
+
+    font-weight:300;
+
+    line-height:.9;
+
+    letter-spacing:-.045em;
+
+    margin:18px 0 28px;
+}
+
+.hero h1 span{
+    color:var(--gold);
+}
+
+.hero-description{
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:clamp(20px,2.3vw,28px);
+
+    line-height:1.35;
+
+    color:var(--soft);
+
+    max-width:800px;
+}
+
+.tradition-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+
+    margin-top:30px;
+}
+
+.tag{
+    border:1px solid var(--line);
+
+    border-radius:999px;
+
+    padding:7px 13px;
+
+    color:var(--muted);
+
+    font-size:12px;
+}
+
+/* =========================
+   ANALYSIS WORKSPACE
+========================= */
+
+.workspace{
+    display:grid;
+
+    grid-template-columns:
+        minmax(0,1.08fr)
+        minmax(380px,.92fr);
+
+    gap:20px;
+
+    align-items:start;
+}
+
+.card{
+    background:rgba(16,20,27,.88);
+
+    border:1px solid var(--line);
+
+    border-radius:var(--radius);
+
+    padding:26px;
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,.16);
+}
+
+.section-number{
+    font-size:10px;
+
+    letter-spacing:.18em;
+
+    color:var(--muted);
+
+    text-transform:uppercase;
+
+    margin-bottom:12px;
+}
+
+.card h2{
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:31px;
+
+    font-weight:400;
+
+    margin:0 0 6px;
+}
+
+.card-intro{
+    color:var(--muted);
+
+    font-size:13px;
+
+    margin:0 0 25px;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+label{
+    display:block;
+
+    color:var(--muted);
+
+    font-size:12px;
+
+    margin-bottom:7px;
+}
+
+.required{
+    color:var(--gold);
+}
+
+textarea,
+input,
+select{
+
+    width:100%;
+
+    background:#0b0e14;
+
+    color:var(--text);
+
+    border:1px solid var(--line);
+
+    border-radius:11px;
+
+    padding:12px 13px;
+
+    outline:none;
+
+    transition:.2s;
+
+}
+
+textarea:focus,
+input:focus,
+select:focus{
+
+    border-color:rgba(216,173,85,.7);
+
+    box-shadow:
+        0 0 0 3px rgba(216,173,85,.08);
+
+}
+
+textarea{
+    resize:vertical;
+}
+
+#lyrics{
+
+    min-height:260px;
+
+    line-height:1.8;
+
+    font-family:
+        "Noto Sans Bengali",
+        "DM Sans",
+        sans-serif;
+
+}
+
+.word-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-top:8px;
+
+    color:var(--muted);
+
+    font-size:11px;
+}
+
+.pdf-link{
+
+    color:var(--gold);
+
+    cursor:pointer;
+
+    border-bottom:1px dotted var(--gold);
+}
+
+.pdf-link input{
+    display:none;
+}
+
+/* =========================
+   CONTEXT
+========================= */
+
+.context{
+
+    margin-top:25px;
+
+    border-top:1px solid var(--line);
+
+    padding-top:21px;
+}
+
+.context-heading{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-bottom:17px;
+}
+
+.context-heading strong{
+
+    font-size:13px;
+
+    font-weight:500;
+}
+
+.context-heading span{
+
+    color:var(--muted);
+
+    font-size:11px;
+}
+
+.fields{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:14px;
+}
+
+.full{
+    grid-column:1/-1;
+}
+
+.actions{
+
+    display:flex;
+
+    gap:10px;
+
+    flex-wrap:wrap;
+
+    margin-top:21px;
+}
+
+.primary{
+
+    background:var(--gold);
+
+    color:#171208;
+
+    border:0;
+
+    border-radius:10px;
+
+    padding:12px 20px;
+
+    font-weight:600;
+}
+
+.primary:hover{
+    filter:brightness(1.08);
+}
+
+.secondary{
+
+    background:transparent;
+
+    color:var(--soft);
+
+    border:1px solid var(--line);
+
+    border-radius:10px;
+
+    padding:11px 18px;
+}
+
+.secondary:hover{
+    border-color:#596273;
+}
+
+.error{
+
+    margin-top:17px;
+
+    border-left:2px solid var(--red);
+
+    padding-left:13px;
+
+    color:#e7b8b5;
+
+    font-size:13px;
+}
+
+/* =========================
+   RESULT
+========================= */
+
+.result-card{
+
+    min-height:620px;
+
+    position:sticky;
+
+    top:20px;
+
+    overflow:hidden;
+}
+
+.empty-result{
+
+    min-height:560px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    text-align:center;
+
+    color:var(--muted);
+
+    padding:30px;
+}
+
+.orbit{
+
+    width:190px;
+    height:190px;
+
+    border:1px solid var(--line);
+
+    border-radius:50%;
+
+    position:relative;
+
+    margin-bottom:30px;
+}
+
+.orbit::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:30px;
+
+    border:1px solid var(--line);
+
+    border-radius:50%;
+}
+
+.orbit::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:7px;
+    height:7px;
+
+    background:var(--gold);
+
+    border-radius:50%;
+
+    left:50%;
+    top:50%;
+
+    transform:translate(-50%,-50%);
+
+    box-shadow:
+        0 0 40px rgba(216,173,85,.4);
+}
+
+.empty-result h3{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:28px;
+
+    font-weight:400;
+
+    color:var(--text);
+
+    margin:0 0 8px;
+}
+
+.empty-result p{
+
+    max-width:350px;
+
+    font-size:13px;
+
+    margin:0;
+}
+
+.result{
+    display:none;
+}
+
+.result.show{
+    display:block;
+}
+
+.result-label{
+
+    color:var(--gold);
+
+    font-size:10px;
+
+    letter-spacing:.18em;
+
+    text-transform:uppercase;
+}
+
+.result-title{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:44px;
+
+    line-height:1;
+
+    margin:10px 0 5px;
+}
+
+.result-sub{
+
+    color:var(--muted);
+
+    font-size:12px;
+}
+
+.score-row{
+
+    display:flex;
+
+    align-items:end;
+
+    gap:14px;
+
+    margin:27px 0 24px;
+}
+
+.score{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:64px;
+
+    line-height:.8;
+
+    color:var(--gold);
+}
+
+.score-description{
+
+    color:var(--muted);
+
+    font-size:12px;
+}
+
+.pills{
+
+    display:flex;
+
+    gap:7px;
+
+    flex-wrap:wrap;
+
+    margin-bottom:22px;
+}
+
+.pill{
+
+    border:1px solid var(--line);
+
+    border-radius:999px;
+
+    padding:5px 10px;
+
+    font-size:11px;
+
+    color:var(--soft);
+}
+
+.pill.gold{
+
+    color:var(--gold);
+
+    border-color:rgba(216,173,85,.4);
+}
+
+/* =========================
+   RESULT SECTIONS
+========================= */
+
+.result-section{
+
+    border-top:1px solid var(--line);
+
+    padding-top:18px;
+
+    margin-top:21px;
+}
+
+.result-section-title{
+
+    font-size:10px;
+
+    letter-spacing:.16em;
+
+    text-transform:uppercase;
+
+    color:var(--muted);
+
+    margin-bottom:14px;
+}
+
+.bar{
+
+    display:grid;
+
+    grid-template-columns:90px 1fr 38px;
+
+    gap:9px;
+
+    align-items:center;
+
+    margin:8px 0;
+
+    font-size:11px;
+}
+
+.track{
+
+    height:6px;
+
+    background:#202631;
+
+    border-radius:99px;
+
+    overflow:hidden;
+}
+
+.fill{
+
+    height:100%;
+
+    width:0;
+
+    background:var(--teal);
+
+    border-radius:99px;
+
+    transition:width .7s ease;
+}
+
+.bar.top .fill{
+    background:var(--gold);
+}
+
+.bar-number{
+
+    color:var(--muted);
+
+    text-align:right;
+}
+
+.reading{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:17px;
+
+    line-height:1.6;
+
+    color:var(--soft);
+}
+
+.note{
+
+    border-left:2px solid var(--gold);
+
+    padding-left:13px;
+
+    color:var(--soft);
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:16px;
+
+    line-height:1.5;
+}
+
+.evidence{
+
+    list-style:none;
+
+    padding:0;
+
+    margin:0;
+}
+
+.evidence li{
+
+    border-top:1px solid var(--line);
+
+    padding:12px 0;
+}
+
+.evidence q{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:17px;
+
+    color:var(--gold);
+
+    font-style:italic;
+}
+
+.evidence .gloss{
+
+    color:var(--muted);
+
+    font-size:11px;
+
+    margin-left:5px;
+}
+
+.evidence .why{
+
+    color:var(--soft);
+
+    font-size:12px;
+
+    margin-top:4px;
+}
+
+.facts{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:10px;
+}
+
+.fact{
+
+    background:var(--surface2);
+
+    border-radius:10px;
+
+    padding:11px;
+}
+
+.fact span{
+
+    display:block;
+
+    color:var(--muted);
+
+    font-size:9px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.08em;
+}
+
+.fact b{
+
+    font-size:13px;
+
+    font-weight:500;
+}
+
+.copy{
+
+    width:100%;
+
+    margin-top:15px;
+}
+
+pre{
+
+    white-space:pre-wrap;
+
+    font-family:Newsreader,Georgia,serif;
+
+    color:var(--soft);
+
+    line-height:1.6;
+}
+
+/* =========================
+   MOVEMENT
+========================= */
+
+.movement{
+
+    margin-top:80px;
+
+    padding-top:55px;
+
+    border-top:1px solid var(--line);
+}
+
+.movement[hidden]{
+
+    display:none;
+}
+
+.movement-head{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:18px 30px;
+
+    align-items:end;
+
+    justify-content:space-between;
+}
+
+.movement h2{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:43px;
+
+    font-weight:300;
+
+    line-height:1;
+
+    margin:0;
+}
+
+.graph-tabs{
+
+    display:flex;
+
+    gap:7px;
+}
+
+.graph-tab{
+
+    background:transparent;
+
+    border:1px solid var(--line);
+
+    border-radius:999px;
+
+    padding:7px 14px;
+
+    color:var(--muted);
+
+    font-size:12px;
+
+    transition:.2s;
+}
+
+.graph-tab:hover{
+
+    color:var(--text);
+
+    border-color:#596273;
+}
+
+.graph-tab.on{
+
+    color:var(--gold);
+
+    border-color:rgba(216,173,85,.4);
+}
+
+.graph-tab:focus-visible{
+
+    outline:1px solid var(--gold);
+
+    outline-offset:3px;
+}
+
+.graph-canvas{
+
+    height:450px;
+
+    margin-top:24px;
+}
+
+.graph-canvas .modebar{
+
+    background:transparent !important;
+}
+
+.graph-status{
+
+    color:var(--muted);
+
+    font-size:13px;
+
+    margin:26px 0 0;
+}
+
+.graph-status[hidden]{
+
+    display:none;
+}
+
+.graph-caption{
+
+    margin-top:20px;
+
+    max-width:78ch;
+}
+
+/* =========================
+   PHILOSOPHY
+========================= */
+
+.philosophy{
+
+    margin-top:80px;
+
+    padding:55px 0;
+
+    border-top:1px solid var(--line);
+
+    border-bottom:1px solid var(--line);
+
+    display:grid;
+
+    grid-template-columns:1fr 2fr;
+
+    gap:60px;
+}
+
+.philosophy h2{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:43px;
+
+    font-weight:300;
+
+    line-height:1;
+
+    margin:0;
+}
+
+.philosophy p{
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:21px;
+
+    color:var(--soft);
+
+    line-height:1.5;
+
+    margin:0;
+}
+
+/* =========================
+   TRADITIONS
+========================= */
+
+.traditions{
+
+    padding:65px 0;
+}
+
+.tradition-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(5,1fr);
+
+    gap:10px;
+}
+
+.tradition-card{
+
+    min-height:135px;
+
+    border:1px solid var(--line);
+
+    border-radius:13px;
+
+    padding:18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.025),
+            transparent
+        );
+}
+
+.tradition-card strong{
+
+    display:block;
+
+    font-family:Newsreader,Georgia,serif;
+
+    font-size:21px;
+
+    font-weight:400;
+
+    margin-bottom:7px;
+}
+
+.tradition-card span{
+
+    color:var(--muted);
+
+    font-size:11px;
+}
+
+.footer{
+
+    border-top:1px solid var(--line);
+
+    padding-top:20px;
+
+    color:#697280;
+
+    font-size:11px;
+
+    max-width:850px;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.spinner{
+
+    display:inline-block;
+
+    width:12px;
+    height:12px;
+
+    border:2px solid rgba(23,18,8,.25);
+
+    border-top-color:#171208;
+
+    border-radius:50%;
+
+    animation:spin .7s linear infinite;
+
+    vertical-align:-2px;
+
+    margin-right:7px;
+}
+
+@keyframes spin{
+
+    to{
+        transform:rotate(360deg);
+    }
+
+}
+
+@media(prefers-reduced-motion:reduce){
+
+    *{
+        animation-duration:.01ms !important;
+
+        transition-duration:.01ms !important;
+    }
+
+    html{
+        scroll-behavior:auto;
+    }
+
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:950px){
+
+    .workspace{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .result-card{
+
+        position:static;
+
+    }
+
+    .tradition-grid{
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+    }
+
+    .philosophy{
+
+        grid-template-columns:1fr;
+
+        gap:20px;
+
+    }
+
+}
+
+@media(max-width:650px){
+
+    .shell{
+
+        padding:
+            0 16px 50px;
+
+    }
+
+    .nav-links{
+
+        display:none;
+
+    }
+
+    .hero{
+
+        padding:
+            60px 0 50px;
+
+    }
+
+    .hero h1{
+
+        font-size:58px;
+
+    }
+
+    .fields{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .full{
+
+        grid-column:auto;
+
+    }
+
+    .card{
+
+        padding:19px;
+
+    }
+
+    .tradition-grid{
+
+        grid-template-columns:1fr 1fr;
+
+    }
+
+    .facts{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .movement h2{
+
+        font-size:32px;
+
+    }
+
+    .graph-canvas{
+
+        height:340px;
+
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="shell">
+
+<!-- =========================
+     NAVIGATION
+========================= -->
+
+<nav class="nav">
+
+    <a class="brand" href="#">
+
+        <span class="logo-mark"></span>
+
+        <span class="logo">
+            LYRIQ
+        </span>
+
+    </a>
+
+    <div class="nav-links">
+
+        <a href="#analyze">
+            Analyze
+        </a>
+
+        <a href="#about">
+            About
+        </a>
+
+        <a href="#traditions">
+            Traditions
+        </a>
+
+    </div>
+
+</nav>
+
+
+<!-- =========================
+     HERO
+========================= -->
+
+<header class="hero">
+
+    <div class="eyebrow">
+        Music Expression Intelligence
+    </div>
+
+    <h1>
+        Read the
+        <span>expression</span>
+        inside music.
+    </h1>
+
+    <p class="hero-description">
+
+        Reads what a song expresses from its words —
+        and from swaralipi, raga and taal when you
+        have them.
+
+    </p>
+
+    <div class="tradition-tags">
+
+        <span class="tag">
+            Rabindrasangeet
+        </span>
+
+        <span class="tag">
+            Baul
+        </span>
+
+        <span class="tag">
+            Lalan Geeti
+        </span>
+
+        <span class="tag">
+            Sufi Verse
+        </span>
+
+        <span class="tag">
+            Classical
+        </span>
+
+        <span class="tag">
+            Everything else
+        </span>
+
+    </div>
+
+</header>
+
+
+<!-- =========================
+     ANALYSIS
+========================= -->
+
+<main
+    id="analyze"
+    class="workspace"
+>
+
+
+<!-- =========================
+     INPUT
+========================= -->
+
+<section class="card">
+
+    <div class="section-number">
+        01 · Composition
+    </div>
+
+    <h2>
+        Bring a song into focus.
+    </h2>
+
+    <p class="card-intro">
+
+        Lyrics are enough to begin.
+        Musical context can deepen the reading
+        when you have it.
+
+    </p>
+
+
+    <label for="lyrics">
+
+        Lyrics
+
+        <span class="required">
+            · required
+        </span>
+
+    </label>
+
+
+    <textarea
+        id="lyrics"
+        spellcheck="false"
+        placeholder="Paste lyrics here — Bangla, Devanagari, Perso-Arabic, roman transliteration or English. A fragment is fine."
+    ></textarea>
+
+
+    <div class="word-row">
+
+        <span id="count">
+            0 words
+        </span>
+
+
+        <label class="pdf-link">
+
+            or analyse a PDF directly
+
+            <input
+                id="file"
+                type="file"
+                accept=".pdf"
+            >
+
+        </label>
+
+    </div>
+
+
+    <!-- CONTEXT -->
+
+    <div class="context">
+
+        <div class="context-heading">
+
+            <strong>
+                Musical & cultural context
+            </strong>
+
+            <span>
+                All fields optional
+            </span>
+
+        </div>
+
+
+        <div class="fields">
+
+
+            <div>
+
+                <label for="title">
+                    Title
+                </label>
+
+                <input
+                    id="title"
+                    type="text"
+                    placeholder="Song or composition"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label for="composer">
+                    Composer / lyricist
+                </label>
+
+                <input
+                    id="composer"
+                    type="text"
+                    placeholder="Artist or composer"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label for="tradition">
+                    Tradition
+                </label>
+
+                <input
+                    id="tradition"
+                    type="text"
+                    list="traditions-list"
+                    placeholder="e.g. Rabindrasangeet"
+                >
+
+                <datalist id="traditions-list">
+
+                    <option>
+                        Rabindrasangeet
+                    </option>
+
+                    <option>
+                        Baul sangeet
+                    </option>
+
+                    <option>
+                        Lalan geeti
+                    </option>
+
+                    <option>
+                        Nazrul geeti
+                    </option>
+
+                    <option>
+                        Shyama sangeet
+                    </option>
+
+                    <option>
+                        Sufi or qawwali
+                    </option>
+
+                    <option>
+                        Kirtan
+                    </option>
+
+                    <option>
+                        Bhajan
+                    </option>
+
+                    <option>
+                        Bengali film song
+                    </option>
+
+                    <option>
+                        Western popular
+                    </option>
+
+                </datalist>
+
+            </div>
+
+
+            <div>
+
+                <label for="language">
+                    Language
+                </label>
+
+                <input
+                    id="language"
+                    type="text"
+                    placeholder="Bengali, Urdu, English..."
+                >
+
+            </div>
+
+
+            <div>
+
+                <label for="parjaay">
+                    Parjaay
+                </label>
+
+                <select id="parjaay">
+
+                    <option value="">
+                        Not specified
+                    </option>
+
+                    <option>
+                        Puja
+                    </option>
+
+                    <option>
+                        Prem
+                    </option>
+
+                    <option>
+                        Prakriti
+                    </option>
+
+                    <option>
+                        Swadesh
+                    </option>
+
+                    <option>
+                        Anushthanik
+                    </option>
+
+                    <option>
+                        Bichitro
+                    </option>
+
+                    <option>
+                        Nrityanatya
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label for="raga">
+                    Raga / scale
+                </label>
+
+                <input
+                    id="raga"
+                    type="text"
+                    placeholder="Bhairavi, Yaman, D minor..."
+                >
+
+            </div>
+
+
+            <div>
+
+                <label for="taal">
+                    Taal
+                </label>
+
+                <input
+                    id="taal"
+                    type="text"
+                    placeholder="Dadra, Kaharba, Teental..."
+                >
+
+            </div>
+
+
+            <div>
+
+                <label for="laya">
+                    Laya / tempo
+                </label>
+
+                <input
+                    id="laya"
+                    type="text"
+                    placeholder="Vilambit, madhya, 72 bpm..."
+                >
+
+            </div>
+
+
+            <div class="full">
+
+                <label for="notation">
+                    Swaralipi / notation
+                </label>
+
+                <textarea
+                    id="notation"
+                    rows="4"
+                    spellcheck="false"
+                    placeholder="Sargam, Akarmatrik swaralipi, ABC/MIDI notes, staff notation description, or any melodic information you have."
+                ></textarea>
+
+            </div>
+
+
+            <div class="full">
+
+                <label for="notes">
+                    Anything else worth knowing
+                </label>
+
+                <input
+                    id="notes"
+                    type="text"
+                    placeholder="Performance, context, translation notes, etc."
+                >
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <div class="actions">
+
+        <button
+            id="go"
+            class="primary"
+        >
+            Read the expression →
+        </button>
+
+
+        <button
+            id="clear"
+            class="secondary"
+            type="button"
+        >
+            Clear
+        </button>
+
+    </div>
+
+
+    <div id="err"></div>
+
+</section>
+
+
+<!-- =========================
+     RESULTS
+========================= -->
+
+<section
+    class="card result-card"
+    aria-live="polite"
+>
+
+
+    <div
+        id="empty"
+        class="empty-result"
+    >
+
+        <div class="orbit"></div>
+
+        <h3>
+            Your expression map
+            will appear here.
+        </h3>
+
+        <p>
+
+            LYRIQ looks beyond a simple
+            positive/negative label to explore
+            emotional character, lyrical evidence
+            and musical context.
+
+        </p>
+
+    </div>
+
+
+    <div
+        id="body"
+        class="result"
+    ></div>
+
+
+</section>
+
+</main>
+
+
+<!-- =========================
+     MOVEMENT
+========================= -->
+
+<section
+    id="movement"
+    class="movement"
+    aria-live="polite"
+    hidden
+>
+
+    <div class="section-number">
+        02 · Movement
+    </div>
+
+
+    <div class="movement-head">
+
+        <h2>
+            A song is not
+            <br>
+            one feeling.
+        </h2>
+
+
+        <div
+            class="graph-tabs"
+            role="tablist"
+            aria-label="Chart view"
+        >
+
+            <button
+                type="button"
+                class="graph-tab on"
+                role="tab"
+                aria-selected="true"
+                data-view="arc"
+            >
+                Arc
+            </button>
+
+
+            <button
+                type="button"
+                class="graph-tab"
+                role="tab"
+                aria-selected="false"
+                data-view="circumplex"
+            >
+                Path
+            </button>
+
+
+            <button
+                type="button"
+                class="graph-tab"
+                role="tab"
+                aria-selected="false"
+                data-view="profile"
+            >
+                Weight
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <p
+        id="graph-status"
+        class="graph-status"
+    >
+        Reading the song section by section…
+    </p>
+
+
+    <div
+        id="graph"
+        class="graph-canvas"
+    ></div>
+
+
+    <div
+        id="graph-caption"
+        class="note graph-caption"
+    ></div>
+
+</section>
+
+
+<!-- =========================
+     PHILOSOPHY
+========================= -->
+
+<section
+    id="about"
+    class="philosophy"
+>
+
+    <div>
+
+        <div class="section-number">
+            03 · The idea
+        </div>
+
+        <h2>
+
+            Words tell one story.
+            <br>
+            Music can tell another.
+
+        </h2>
+
+    </div>
+
+
+    <p>
+
+        LYRIQ studies where those expressions meet.
+        It can work with lyrics alone, or incorporate
+        the raga, taal, laya and swaralipi you provide.
+
+        The result is an interpretation —
+        not a claim of absolute meaning.
+
+    </p>
+
+</section>
+
+
+<!-- =========================
+     TRADITIONS
+========================= -->
+
+<section
+    id="traditions"
+    class="traditions"
+>
+
+    <div class="section-number">
+        04 · Built across traditions
+    </div>
+
+
+    <div class="tradition-grid">
+
+
+        <div class="tradition-card">
+
+            <strong>
+                Rabindrasangeet
+            </strong>
+
+            <span>
+                lyric, parjaay & musical context
+            </span>
+
+        </div>
+
+
+        <div class="tradition-card">
+
+            <strong>
+                Baul
+            </strong>
+
+            <span>
+                folk spirituality & expression
+            </span>
+
+        </div>
+
+
+        <div class="tradition-card">
+
+            <strong>
+                Lalan Geeti
+            </strong>
+
+            <span>
+                philosophy, metaphor & longing
+            </span>
+
+        </div>
+
+
+        <div class="tradition-card">
+
+            <strong>
+                Sufi Verse
+            </strong>
+
+            <span>
+                devotion, yearning & symbolism
+            </span>
+
+        </div>
+
+
+        <div class="tradition-card">
+
+            <strong>
+                Everything else
+            </strong>
+
+            <span>
+                contemporary, classical & folk
+            </span>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+<footer class="footer">
+
+    LYRIQ reads perceived musical expression rather
+    than measuring what a listener must feel.
+    Interpretations are contestable and may vary
+    across cultural, linguistic and musical contexts.
+
+    This is a research prototype, not a clinical
+    or therapeutic tool.
+
+</footer>
+
+</div>
+
+
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+
+<script>
+
+/* ============================================
+   LYRIQ FRONTEND LOGIC
+============================================ */
+
+const $ = id =>
+    document.getElementById(id);
+
+
+const FIELDS = [
+    "title",
+    "composer",
+    "tradition",
+    "language",
+    "parjaay",
+    "raga",
+    "taal",
+    "laya",
+    "notation",
+    "notes"
+];
+
+
+const FAMILIES = [
+    "joy",
+    "love",
+    "serenity",
+    "devotion",
+    "longing",
+    "sadness",
+    "fear",
+    "anger"
+];
+
+
+const COLORS = {
+
+    love:"#c98293",
+
+    joy:"#d8ad55",
+
+    devotion:"#8c81c8",
+
+    longing:"#7e8fd6",
+
+    sadness:"#668fc0",
+
+    serenity:"#69a99e",
+
+    anger:"#c86c69",
+
+    fear:"#c07a3f"
+
+};
+
+
+const QUADRANT_COLORS = {
+
+    Q1:"#d8ad55",
+
+    Q2:"#c86c69",
+
+    Q3:"#668fc0",
+
+    Q4:"#69a99e"
+
+};
+
+
+function escapeHTML(value){
+
+    return String(value ?? "")
+        .replace(/[&<>"]/g, character => ({
+
+            "&":"&amp;",
+            "<":"&lt;",
+            ">":"&gt;",
+            '"':"&quot;"
+
+        }[character]));
+
+}
+
+
+function pretty(value){
+
+    return String(value ?? "")
+        .replace(/_/g," ");
+
+}
+
+
+function number(value, fallback=0){
+
+    return Number.isFinite(Number(value))
+        ? Number(value)
+        : fallback;
+
+}
+
+
+/* =========================
+   WORD COUNTER
+========================= */
+
+$("lyrics").addEventListener(
+    "input",
+    event => {
+
+        const words =
+            event.target.value
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .length;
+
+
+        $("count").textContent =
+            words === 1
+                ? "1 word"
+                : words + " words";
+
+    }
+);
+
+
+/* =========================
+   CLEAR
+========================= */
+
+$("clear").addEventListener(
+    "click",
+    () => {
+
+        $("lyrics").value = "";
+
+        FIELDS.forEach(
+            field => {
+
+                const element = $(field);
+
+                if(element)
+                    element.value = "";
+
+            }
+        );
+
+
+        $("count").textContent =
+            "0 words";
+
+
+        $("err").innerHTML = "";
+
+        $("body").innerHTML = "";
+
+        $("body").className = "result";
+
+        $("empty").style.display =
+            "flex";
+
+
+        hideGraph();
+
+
+        $("lyrics").focus();
+
+    }
+);
+
+
+/* =========================
+   ERROR
+========================= */
+
+function showError(message){
+
+    $("err").innerHTML =
+        '<div class="error">'
+        + escapeHTML(message)
+        + "</div>";
+
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+function setLoading(active){
+
+    const button = $("go");
+
+
+    button.disabled = active;
+
+
+    if(active){
+
+        button.innerHTML =
+            '<span class="spinner"></span>Reading expression';
+
+    }
+
+    else{
+
+        button.innerHTML =
+            "Read the expression →";
+
+    }
+
+}
+
+
+/* =========================
+   MAIN ANALYSIS
+========================= */
+
+$("go").addEventListener(
+    "click",
+    analyze
+);
+
+
+$("lyrics").addEventListener(
+    "keydown",
+    event => {
+
+        if(
+            (event.ctrlKey || event.metaKey)
+            &&
+            event.key === "Enter"
+        ){
+
+            analyze();
+
+        }
+
+    }
+);
+
+
+async function analyze(){
+
+    const lyrics =
+        $("lyrics").value.trim();
+
+
+    $("err").innerHTML = "";
+
+
+    if(!lyrics){
+
+        showError(
+            "Paste some lyrics first. Everything else is optional."
+        );
+
+        $("lyrics").focus();
+
+        return;
+
+    }
+
+
+    const payload = {
+
+        lyrics: lyrics
+
+    };
+
+
+    FIELDS.forEach(
+        field => {
+
+            const value =
+                $(field).value.trim();
+
+
+            if(value)
+                payload[field] = value;
+
+        }
+    );
+
+
+    setLoading(true);
+
+
+    try{
+
+        const response =
+            await fetch(
+                "/api/analyze",
+                {
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(payload)
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(!response.ok){
+
+            throw new Error(
+                data.error ||
+                "The request failed."
+            );
+
+        }
+
+
+        if(data.status === "care"){
+
+            renderCare(data);
+
+            hideGraph();
+
+        }
+
+        else{
+
+            renderResult(data);
+
+            drawGraph(
+                payload,
+                data
+            );
+
+        }
+
+    }
+
+    catch(error){
+
+        showError(
+            error.message
+        );
+
+        hideGraph();
+
+    }
+
+    finally{
+
+        setLoading(false);
+
+    }
+
+}
+
+
+/* =========================
+   PDF ANALYSIS
+========================= */
+
+$("file").addEventListener(
+    "change",
+    async event => {
+
+        const file =
+            event.target.files[0];
+
+
+        if(!file)
+            return;
+
+
+        if(
+            !file.name
+                .toLowerCase()
+                .endsWith(".pdf")
+        ){
+
+            showError(
+                "The file analyser currently accepts PDF files."
+            );
+
+            event.target.value = "";
+
+            return;
+
+        }
+
+
+        const form =
+            new FormData();
+
+
+        form.append(
+            "file",
+            file
+        );
+
+
+        setLoading(true);
+
+
+        try{
+
+            const response =
+                await fetch(
+                    "/api/analyze-pdf",
+                    {
+
+                        method:"POST",
+
+                        body:form
+
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if(!response.ok){
+
+                throw new Error(
+                    data.error ||
+                    "Could not read the PDF."
+                );
+
+            }
+
+
+            renderRaw(
+                data.raw_text
+            );
+
+
+            hideGraph();
+
+        }
+
+        catch(error){
+
+            showError(
+                error.message
+            );
+
+        }
+
+        finally{
+
+            setLoading(false);
+
+            event.target.value = "";
+
+        }
+
+    }
+);
+
+
+/* =========================
+   MOVEMENT GRAPH
+========================= */
+
+let graphFigures = null;
+
+let graphConfig = {
+    responsive:true
+};
+
+let graphView = "arc";
+
+
+const graphTabs = [
+    ...document.querySelectorAll(".graph-tab")
+];
+
+
+graphTabs.forEach(
+    tab =>
+        tab.addEventListener(
+            "click",
+            () => {
+
+                graphTabs.forEach(
+                    other => {
+
+                        const on =
+                            other === tab;
+
+
+                        other.classList
+                            .toggle("on", on);
+
+
+                        other.setAttribute(
+                            "aria-selected",
+                            String(on)
+                        );
+
+                    }
+                );
+
+
+                graphView =
+                    tab.dataset.view;
+
+
+                paintGraph();
+
+            }
+        )
+);
+
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        if(graphFigures)
+            Plotly.Plots.resize($("graph"));
+
+    }
+);
+
+
+function paintGraph(){
+
+    if(
+        !graphFigures ||
+        !graphFigures[graphView]
+    )
+        return;
+
+
+    Plotly.react(
+
+        $("graph"),
+
+        graphFigures[graphView].data,
+
+        graphFigures[graphView].layout,
+
+        graphConfig
+
+    );
+
+}
+
+
+function hideGraph(){
+
+    $("movement").hidden = true;
+
+
+    if(graphFigures)
+        Plotly.purge($("graph"));
+
+
+    graphFigures = null;
+
+    $("graph-caption").textContent = "";
+
+}
+
+
+async function drawGraph(payload, result){
+
+    $("movement").hidden = false;
+
+    $("graph-status").hidden = false;
+
+    $("graph-status").textContent =
+        "Reading the song section by section…";
+
+    $("graph-caption").textContent = "";
+
+
+    if(graphFigures)
+        Plotly.purge($("graph"));
+
+
+    graphFigures = null;
+
+
+    try{
+
+        const response =
+            await fetch(
+                "/api/graph",
+                {
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            ...payload,
+
+                            analysis:
+                                result || null
+
+                        })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(
+            !response.ok ||
+            data.error
+        ){
+
+            $("graph-status").textContent =
+                data.error ||
+                "The movement chart could not be built. Read the expression again to retry.";
+
+            return;
+
+        }
+
+
+        graphFigures = data.figures;
+
+        graphConfig =
+            data.config ||
+            { responsive:true };
+
+
+        $("graph-status").hidden = true;
+
+        $("graph-caption").textContent =
+            data.caption || "";
+
+
+        paintGraph();
+
+    }
+
+    catch(error){
+
+        $("graph-status").textContent =
+            "The movement chart request did not reach the server.";
+
+    }
+
+}
+
+
+/* =========================
+   CARE RESPONSE
+========================= */
+
+function renderCare(data){
+
+    $("empty").style.display =
+        "none";
+
+
+    $("body").className =
+        "result show";
+
+
+    $("body").innerHTML =
+
+        '<div class="result-label">'
+        + 'LYRIQ · Reading'
+        + '</div>'
+
+        +
+
+        '<div class="reading">'
+        +
+        escapeHTML(data.message)
+        +
+        '</div>';
+
+}
+
+
+/* =========================
+   RAW PDF
+========================= */
+
+function renderRaw(text){
+
+    $("empty").style.display =
+        "none";
+
+
+    $("body").className =
+        "result show";
+
+
+    $("body").innerHTML =
+
+        '<div class="result-label">'
+        + 'PDF · Reading'
+        + '</div>'
+
+        +
+
+        '<pre>'
+        +
+        escapeHTML(text)
+        +
+        '</pre>';
+
+}
+
+
+/* =========================
+   RESULT COLOR
+========================= */
+
+function getColor(data){
+
+    const key =
+        String(
+            data.primary_emotion || ""
+        )
+        .toLowerCase()
+        .replace(/\s+/g,"_");
+
+
+    return COLORS[key]
+        ||
+        QUADRANT_COLORS[data.quadrant]
+        ||
+        "#d8ad55";
+
+}
+
+
+/* =========================
+   RESULT
+========================= */
+
+function renderResult(data){
+
+    $("empty").style.display =
+        "none";
+
+
+    $("body").className =
+        "result show";
+
+
+    const color =
+        getColor(data);
+
+
+    const distribution =
+        data.distribution &&
+        typeof data.distribution === "object"
+
+            ? data.distribution
+
+            : null;
+
+
+    let top = null;
+
+
+    if(distribution){
+
+        top =
+            Object.keys(distribution)
+                .reduce(
+                    (a,b) =>
+                        distribution[b]
+                        >
+                        distribution[a]
+                            ? b
+                            : a
+                );
+
+    }
+
+
+    let html = "";
+
+
+    html +=
+
+        '<div class="result-label">'
+        +
+        'LYRIQ · Expression Map'
+        +
+        '</div>';
+
+
+    html +=
+
+        '<div class="result-title">'
+        +
+        '<span style="color:'
+        +
+        color
+        +
+        '">'
+        +
+        escapeHTML(
+            pretty(
+                data.primary_emotion
+                ||
+                "Reading"
+            )
+        )
+        +
+        '</span>'
+        +
+        '</div>';
+
+
+    html +=
+
+        '<div class="result-sub">'
+        +
+        escapeHTML(
+            data.quadrant_label
+            ||
+            data.quadrant
+            ||
+            "Musical expression"
+        )
+        +
+        '</div>';
+
+
+    if(
+        data.title ||
+        data.tradition
+    ){
+
+        html +=
+
+            '<div class="result-sub">'
+            +
+            escapeHTML(
+                [
+                    data.title,
+                    data.tradition
+                ]
+                .filter(Boolean)
+                .join(" · ")
+            )
+            +
+            '</div>';
+
+    }
+
+
+    /* Expression index */
+
+    if(
+        data.valence !== undefined
+    ){
+
+        const score =
+            Math.round(
+                (
+                    (
+                        number(data.valence)
+                        + 1
+                    )
+                    / 2
+                )
+                * 100
+            );
+
+
+        html +=
+
+            '<div class="score-row">'
+
+            +
+
+            '<div class="score" style="color:'
+            +
+            color
+            +
+            '">'
+            +
+            score
+            +
+            '</div>'
+
+            +
+
+            '<div class="score-description">'
+            +
+            'expression'
+            +
+            '<br>'
+            +
+            'index'
+            +
+            '</div>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    /* Emotion pills */
+
+    const pills = [];
+
+
+    (
+        data.secondary_emotions
+        ||
+        []
+    )
+    .forEach(
+        emotion => {
+
+            pills.push({
+
+                text:
+                    pretty(emotion),
+
+                gold:false
+
+            });
+
+        }
+    );
+
+
+    if(data.mixed_emotion){
+
+        pills.push({
+
+            text:
+                "mixed expression",
+
+            gold:true
+
+        });
+
+    }
+
+
+    if(data.rasa){
+
+        pills.push({
+
+            text:
+                "rasa · "
+                +
+                data.rasa,
+
+            gold:true
+
+        });
+
+    }
+
+
+    if(pills.length){
+
+        html +=
+            '<div class="pills">';
+
+
+        pills.forEach(
+            pill => {
+
+                html +=
+
+                    '<span class="pill '
+                    +
+                    (
+                        pill.gold
+                            ? "gold"
+                            : ""
+                    )
+                    +
+                    '">'
+                    +
+                    escapeHTML(
+                        pill.text
+                    )
+                    +
+                    '</span>';
+
+            }
+        );
+
+
+        html +=
+            '</div>';
+
+    }
+
+
+    /* Distribution */
+
+    if(distribution){
+
+        const keys =
+
+            FAMILIES
+                .filter(
+                    family =>
+                        family
+                        in
+                        distribution
+                )
+
+                .concat(
+
+                    Object.keys(
+                        distribution
+                    )
+                    .filter(
+                        family =>
+                            !FAMILIES.includes(
+                                family
+                            )
+                    )
+
+                );
+
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            'Emotional character'
+            +
+            '</div>';
+
+
+        keys.forEach(
+            family => {
+
+                const value =
+                    number(
+                        distribution[family]
+                    );
+
+
+                html +=
+
+                    '<div class="bar '
+                    +
+                    (
+                        family === top
+                            ? "top"
+                            : ""
+                    )
+                    +
+                    '">'
+
+                    +
+
+                    '<span>'
+                    +
+                    escapeHTML(
+                        pretty(family)
+                    )
+                    +
+                    '</span>'
+
+                    +
+
+                    '<span class="track">'
+
+                    +
+
+                    '<span class="fill" style="width:'
+                    +
+                    (
+                        value * 100
+                    ).toFixed(0)
+                    +
+                    '%;'
+                    +
+                    (
+                        family === top
+                            ? "background:"+color
+                            : ""
+                    )
+                    +
+                    '"></span>'
+
+                    +
+
+                    '</span>'
+
+                    +
+
+                    '<span class="bar-number">'
+                    +
+                    value.toFixed(2)
+                    +
+                    '</span>'
+
+                    +
+
+                    '</div>';
+
+            }
+        );
+
+
+        html +=
+            '</div>';
+
+    }
+
+
+    /* AI interpretation */
+
+    if(data.summary){
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            "LYRIQ's reading"
+            +
+            '</div>'
+
+            +
+
+            '<div class="reading">'
+            +
+            escapeHTML(
+                data.summary
+            )
+            +
+            '</div>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    /* Surface */
+
+    if(data.surface_vs_underlying){
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            'Surface & underlying'
+            +
+            '</div>'
+
+            +
+
+            '<div class="note">'
+            +
+            escapeHTML(
+                data.surface_vs_underlying
+            )
+            +
+            '</div>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    /* Music conflict */
+
+    if(data.lyrics_music_conflict){
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            'Words against music'
+            +
+            '</div>'
+
+            +
+
+            '<div class="note">'
+            +
+            escapeHTML(
+                data.lyrics_music_conflict
+            )
+            +
+            '</div>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    /* Alternate reading */
+
+    if(data.alternate_reading){
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            'Another reading'
+            +
+            '</div>'
+
+            +
+
+            '<div class="note">'
+            +
+            escapeHTML(
+                data.alternate_reading
+            )
+            +
+            '</div>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    /* Evidence */
+
+    if(
+        (
+            data.evidence
+            ||
+            []
+        ).length
+    ){
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            'Lyrical evidence'
+            +
+            '</div>'
+
+            +
+
+            '<ul class="evidence">';
+
+
+        data.evidence.forEach(
+            evidence => {
+
+                html +=
+
+                    '<li>'
+
+                    +
+
+                    '<q>'
+                    +
+                    escapeHTML(
+                        evidence.phrase
+                    )
+                    +
+                    '</q>'
+
+                    +
+
+                    (
+                        evidence.gloss
+                            ?
+
+                            '<span class="gloss">'
+                            +
+                            escapeHTML(
+                                evidence.gloss
+                            )
+                            +
+                            '</span>'
+
+                            :
+
+                            ""
+                    )
+
+                    +
+
+                    (
+                        evidence.why
+                            ?
+
+                            '<div class="why">'
+                            +
+                            escapeHTML(
+                                evidence.why
+                            )
+                            +
+                            '</div>'
+
+                            :
+
+                            ""
+                    )
+
+                    +
+
+                    '</li>';
+
+            }
+        );
+
+
+        html +=
+
+            '</ul>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    /* Context facts */
+
+    const facts = [];
+
+
+    if(data.language){
+
+        facts.push([
+            "Language",
+            data.language
+        ]);
+
+    }
+
+
+    if(data.tradition){
+
+        facts.push([
+            "Tradition",
+            data.tradition
+            +
+            (
+                data.tradition_is_inferred
+                    ? ", inferred"
+                    : ""
+            )
+        ]);
+
+    }
+
+
+    if(data.parjaay){
+
+        facts.push([
+            "Parjaay",
+            data.parjaay
+        ]);
+
+    }
+
+
+    if(data.raga){
+
+        facts.push([
+            "Raga / scale",
+            data.raga
+        ]);
+
+    }
+
+
+    if(data.taal){
+
+        facts.push([
+            "Taal",
+            data.taal
+        ]);
+
+    }
+
+
+    if(data.laya){
+
+        facts.push([
+            "Laya / tempo",
+            data.laya
+        ]);
+
+    }
+
+
+    if(
+        data.confidence !==
+        undefined
+    ){
+
+        facts.push([
+            "Confidence",
+            number(
+                data.confidence
+            ).toFixed(2)
+        ]);
+
+    }
+
+
+    if(facts.length){
+
+        html +=
+
+            '<div class="result-section">'
+
+            +
+
+            '<div class="result-section-title">'
+            +
+            'Context'
+            +
+            '</div>'
+
+            +
+
+            '<div class="facts">';
+
+
+        facts.forEach(
+            fact => {
+
+                html +=
+
+                    '<div class="fact">'
+
+                    +
+
+                    '<span>'
+                    +
+                    escapeHTML(
+                        fact[0]
+                    )
+                    +
+                    '</span>'
+
+                    +
+
+                    '<b>'
+                    +
+                    escapeHTML(
+                        fact[1]
+                    )
+                    +
+                    '</b>'
+
+                    +
+
+                    '</div>';
+
+            }
+        );
+
+
+        html +=
+
+            '</div>'
+
+            +
+
+            '</div>';
+
+    }
+
+
+    html +=
+
+        '<button '
+        +
+        'id="copy" '
+        +
+        'class="secondary copy" '
+        +
+        'type="button">'
+        +
+        'Copy analysis JSON'
+        +
+        '</button>';
+
+
+    $("body").innerHTML =
+        html;
+
+
+    $("copy").addEventListener(
+        "click",
+        async event => {
+
+            await navigator
+                .clipboard
+                .writeText(
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    )
+                );
+
+
+            event.target.textContent =
+                "Copied";
+
+
+            setTimeout(
+                () => {
+
+                    event.target.textContent =
+                        "Copy analysis JSON";
+
+                },
+                1400
+            );
+
+        }
+    );
+
+}
+
+</script>
+
+
+<script src="{{ url_for('static', filename='review.js') }}"></script>
+
+</body>
+</html>

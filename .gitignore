@@ -1,0 +1,24 @@
+# secrets — your API key
+.env
+
+# the corrections database and its journal files
+lyriq.db
+lyriq.db-journal
+lyriq.db-wal
+lyriq.db-shm
+*.db
+
+# virtual environment
+.venv/
+venv/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# windows / editors
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
