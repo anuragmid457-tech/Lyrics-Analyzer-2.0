@@ -5,3 +5,25 @@ git init
 git branch -M main
 git remote add origin https://github.com/anuragmid457-tech/Lyrics-Analyzer-2.0.git
 git pull origin main --allow-unrelated-histories
+
+http://localhost:5000/api/review/stats
+
+
+0.737 Bhaalobasi, bhaalobasi - Ei sure kaachhe
+0.809 Badtameezee ek bimari hai Ek aisi bimari
+0.737 Bhaalobasi, bhaalobasi - Ei sure kaachhe
+0.813 Lyrics Recordings Badtameezee ek bimari 
+0.813 Lyrics Recordings Badtameezee ek bimari 
+0.813 Lyrics Recordings Badtameezee ek bimari 
+0.737 Bhaalobasi, bhaalobasi - Ei sure kaachhe
+
+2. Categorical — choose ONE primary_emotion from this closed label set:
+   love, longing (viraha), sadness, grief, nostalgia, anger, fear,
+   anxiety, peace, devotion (bhakti), spiritual_yearning, hope, patriotism,
+   playfulness, loneliness, acceptance, wonder
+   Then list 1-3 secondary_emotions from the same set.
+
+
+   Use the register the song lives in,
+     including Hindi, Bengali or Urdu terms where they name the feeling better
+     than English.

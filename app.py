@@ -6,7 +6,7 @@ analyser files:
   lyrics_senti_analysis.py  -> analyze(lyrics: str) -> dict
   lyrics_text.py            -> detect_emotion(path) -> str   (reads a PDF)
 
-Three modules sit beside them:
+Four modules sit beside them:
   graph.py      section by section scores, shaped as Plotly figures
   learning.py   what past expert corrections should tell the analyser
   review.py     the expert-facing routes, registered as a blueprint
@@ -19,21 +19,25 @@ import tempfile
 from flask import Flask, jsonify, render_template, request
 from werkzeug.utils import secure_filename
 
-import Database
+try:                        # filenames differ in case between machines
+    import database
+    import learning
+    from review import review
+except ImportError:         # pragma: no cover
+    import Database as database
+    import Learning as learning
+    from Review import review
+
 import graph
-import Learning
 import lyrics_senti_analysis
 import lyrics_text
-from Review import review
 
 app = Flask(__name__)
 app.register_blueprint(review)
 
-Database.init()
+database.init()
 
 # --- optional inputs -----------------------------------------------------
-# The browser sends lyrics plus any of these. Blank ones are dropped, so a
-# lyrics-only request reaches analyze() as bare lyrics and nothing else.
 OPTIONAL = [
     ("title", "Title"),
     ("composer", "Composer or lyricist"),
@@ -67,7 +71,15 @@ def learned_mode(payload):
     """Per-request choice if the browser sent one, otherwise the stored default."""
     if isinstance(payload.get("use_learned"), bool):
         return payload["use_learned"]
-    return Database.get_preference("use_learned", "1") == "1"
+    return database.get_preference("use_learned", "1") == "1"
+
+
+def chosen_experts(payload):
+    """Whose corrections to hear. None means everyone."""
+    if isinstance(payload.get("experts"), list):
+        names = [str(n).strip() for n in payload["experts"] if str(n).strip()]
+        return names or None
+    return learning.stored_filter() or None
 
 
 # --- response shaping ----------------------------------------------------
@@ -81,12 +93,7 @@ QUADRANTS = {
 
 
 def for_browser(result):
-    """Light touch-up of your JSON so the page can render it.
-
-    Pulls the Qn code out of a longer quadrant string, falls back to deriving
-    it from the coordinates, and accepts either music_therapy key. Everything
-    else is passed through untouched.
-    """
+    """Light touch-up of your JSON so the page can render it."""
     out = dict(result)
 
     code = str(out.get("quadrant") or "")[:2].upper()
@@ -118,14 +125,16 @@ def api_analyze():
 
     text = compose(payload)
     use_learned = learned_mode(payload)
+    experts = chosen_experts(payload) if use_learned else None
+    ranking = learning.stored_ranking() if use_learned else []
 
     # An identical song corrected before is served from that correction rather
     # than asked again. Turn learned mode off to see what the model says alone.
     if use_learned:
-        hit = Learning.exact_correction(text)
+        hit = learning.exact_correction(text, editors=experts)
         if hit:
             out = for_browser(hit["corrected"])
-            out["analysis_id"] = Database.save_analysis(
+            out["analysis_id"] = database.save_analysis(
                 text, hit["corrected"], source="correction",
                 learned_from=[hit["id"]],
             )
@@ -135,11 +144,16 @@ def api_analyze():
                 "correction_id": hit["id"],
                 "edited_at": hit["created_at"],
                 "editor": hit["editor"],
+                "experts": experts or [],
+                "ranking": ranking,
                 "matches": [],
             }
             return jsonify(out)
 
-    guidance, matches = Learning.guidance_for(text) if use_learned else ("", [])
+    guidance, matches = (
+        learning.guidance_for(text, editors=experts, ranking=ranking)
+        if use_learned else ("", [])
+    )
 
     try:
         result = lyrics_text.analyze(text + guidance)
@@ -155,26 +169,23 @@ def api_analyze():
         }), 502
 
     out = for_browser(result)
-    out["analysis_id"] = Database.save_analysis(
+    out["analysis_id"] = database.save_analysis(
         text, result, source="model",
         learned_from=[match["id"] for match in matches] or None,
     )
     out["learning"] = {
         "mode": "learned" if use_learned else "default",
         "source": "guided" if matches else "model",
-        "matches": Learning.summarise(matches),
+        "experts": experts or [],
+        "ranking": ranking,
+        "matches": learning.summarise(matches),
     }
     return jsonify(out)
 
 
 @app.post("/api/graph")
 def api_graph():
-    """Section-by-section scores for the same lyrics, shaped as Plotly figures.
-
-    Takes the same payload /api/analyze takes, plus an optional "analysis"
-    object: pass the dict you already got back from /api/analyze and the
-    whole-song verdict is plotted alongside the sections as a single star.
-    """
+    """Section-by-section scores for the same lyrics, shaped as Plotly figures."""
     payload = request.get_json(silent=True) or {}
     if not (payload.get("lyrics") or "").strip():
         return jsonify({"error": "Paste some lyrics to plot."}), 400
@@ -191,13 +202,7 @@ def api_graph():
 
 @app.post("/api/analyze-pdf")
 def api_analyze_pdf():
-    """Runs lyrics_text.detect_emotion() on an uploaded PDF.
-
-    Note: detect_emotion() returns a raw string (the six header lines plus
-    prose from its own prompt), not the structured dict analyze() returns.
-    The front end renders it as plain text rather than through the same
-    circumplex/bars UI used for /api/analyze.
-    """
+    """Runs detect_emotion() on an uploaded PDF, returning its raw string."""
     upload = request.files.get("file")
     if upload is None or not upload.filename:
         return jsonify({"error": "Attach a PDF first."}), 400

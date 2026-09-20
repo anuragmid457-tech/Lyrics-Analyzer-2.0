@@ -7,13 +7,10 @@
 
    What it adds:
      · a switch choosing learned corrections or the plain model
+     · a picker choosing whose corrections the model should follow
      · a provenance line under each reading saying which one produced it
      · Edit this reading, which opens the correction drawer
-     · a review log of every correction, with retire and restore
-
-   The editor's label fields rest as a single control showing the current
-   value. Clicking one opens a panel offering two ways in, each with an
-   indicator light: choose from the standard labels, or type your own.
+     · a review log: who changed what, expert standings, retire and restore
 ============================================ */
 
 (function () {
@@ -45,8 +42,6 @@
         Q4: "Q4 · calm, serene"
     };
 
-    // Same hues the result card uses for its bars, so a label means the same
-    // colour wherever it appears.
     var EMOTION_COLOR = {
         love: "#c98293", joy: "#d8ad55", devotion: "#8c81c8",
         longing: "#7e8fd6", sadness: "#668fc0", serenity: "#69a99e",
@@ -59,8 +54,10 @@
 
     var state = {
         useLearned: true,
-        current: null,
-        original: null
+        experts: [],
+        filter: [],
+        ranking: [],
+        current: null
     };
 
 
@@ -103,7 +100,18 @@
         if (existing) existing.remove();
         var node = el("div", "review-toast", message);
         document.body.appendChild(node);
-        setTimeout(function () { node.remove(); }, 2600);
+        setTimeout(function () { node.remove(); }, 2800);
+    }
+
+    // The reviewer's own name, remembered between sessions so it is typed once.
+    function rememberedName() {
+        try { return window.localStorage.getItem("lyriq-editor") || ""; }
+        catch (error) { return ""; }
+    }
+
+    function rememberName(name) {
+        try { window.localStorage.setItem("lyriq-editor", name); }
+        catch (error) { /* private browsing, no matter */ }
     }
 
     async function api(path, options) {
@@ -111,6 +119,14 @@
         var data = await response.json().catch(function () { return {}; });
         if (!response.ok) throw new Error(data.error || "The request failed.");
         return data;
+    }
+
+    function post(path, body) {
+        return api(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
     }
 
 
@@ -134,6 +150,15 @@
         label.appendChild(caption);
         actions.appendChild(label);
 
+        var picker = el("div", "expert-filter");
+        var pickerLabel = el("label", null, "Follow");
+        pickerLabel.setAttribute("for", "expert-select");
+        var select = document.createElement("select");
+        select.id = "expert-select";
+        picker.appendChild(pickerLabel);
+        picker.appendChild(select);
+        actions.appendChild(picker);
+
         var logButton = el("button", "review-log-open", "Review log");
         logButton.type = "button";
         logButton.addEventListener("click", openLog);
@@ -142,12 +167,9 @@
         box.addEventListener("change", async function () {
             state.useLearned = box.checked;
             label.classList.toggle("on", box.checked);
+            picker.hidden = !box.checked;
             try {
-                await api("/preferences", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ use_learned: box.checked })
-                });
+                await post("/preferences", { use_learned: box.checked });
                 toast(box.checked
                     ? "Learned corrections on. They will shape the next reading."
                     : "Learned corrections off. Readings come from the model alone.");
@@ -156,15 +178,59 @@
             }
         });
 
-        loadPreferences(box, label);
+        select.addEventListener("change", async function () {
+            var chosen = select.value ? [select.value] : [];
+            state.filter = chosen;
+            try {
+                await post("/preferences", { filter: chosen });
+                toast(chosen.length
+                    ? "Following " + chosen[0] + " only."
+                    : "Following every expert on file.");
+            } catch (error) {
+                toast(error.message);
+            }
+        });
+
+        loadPreferences(box, label, select, picker);
     }
 
-    async function loadPreferences(box, label) {
+    function fillExpertSelect(select) {
+        if (!select) return;
+        select.innerHTML = "";
+
+        var all = document.createElement("option");
+        all.value = "";
+        all.textContent = state.experts.length
+            ? "Every expert (" + state.experts.length + ")"
+            : "Every expert";
+        select.appendChild(all);
+
+        state.experts.forEach(function (expert) {
+            var option = document.createElement("option");
+            option.value = expert.name;
+            var standing = state.ranking.indexOf(expert.name);
+            option.textContent = expert.name
+                + (standing === -1 ? "" : " · #" + (standing + 1))
+                + " · " + expert.teaching
+                + (expert.teaching === 1 ? " edit" : " edits");
+            select.appendChild(option);
+        });
+
+        select.value = state.filter.length ? state.filter[0] : "";
+    }
+
+    async function loadPreferences(box, label, select, picker) {
         try {
             var data = await api("/preferences");
             state.useLearned = data.use_learned;
+            state.experts = data.experts || [];
+            state.filter = data.filter || [];
+            state.ranking = data.ranking || [];
+
             box.checked = data.use_learned;
             label.classList.toggle("on", data.use_learned);
+            if (picker) picker.hidden = !data.use_learned;
+            fillExpertSelect(select);
 
             var teaching = (data.stats || {}).teaching || 0;
             var count = document.getElementById("learned-count");
@@ -178,6 +244,24 @@
         }
     }
 
+    async function refreshExperts() {
+        try {
+            var data = await api("/experts");
+            state.experts = data.experts || [];
+            state.filter = data.filter || [];
+            state.ranking = data.ranking || [];
+            fillExpertSelect(document.getElementById("expert-select"));
+
+            var teaching = (data.stats || {}).teaching || 0;
+            var count = document.getElementById("learned-count");
+            if (count) {
+                count.textContent = teaching
+                    ? "· " + teaching + (teaching === 1 ? " edit" : " edits")
+                    : "· none yet";
+            }
+        } catch (error) { /* leave the old list in place */ }
+    }
+
 
     /* =========================
        PROVENANCE + EDIT BUTTON
@@ -185,27 +269,37 @@
 
     function describe(learning) {
         if (!learning) return null;
+
+        var following = (learning.experts || []).length
+            ? " Following " + learning.experts.join(", ") + "."
+            : "";
+
         if (learning.source === "correction") {
             return {
                 tone: "learned",
-                text: "Served from an expert correction of this exact song, saved "
-                    + (learning.edited_at || "").slice(0, 10)
-                    + (learning.editor ? " by " + learning.editor : "")
+                text: "Served from a correction of this exact song by "
+                    + (learning.editor || "an expert")
+                    + ", saved " + (learning.edited_at || "").slice(0, 10)
                     + ". The model was not asked again."
             };
         }
         if (learning.source === "guided") {
+            var names = [];
+            (learning.matches || []).forEach(function (match) {
+                if (names.indexOf(match.editor) === -1) names.push(match.editor);
+            });
             var count = (learning.matches || []).length;
             return {
                 tone: "learned",
                 text: "Read with " + count + " past correction"
-                    + (count === 1 ? "" : "s") + " on similar songs as guidance."
+                    + (count === 1 ? "" : "s") + " as guidance, from "
+                    + names.join(", ") + "."
             };
         }
         return {
             tone: learning.mode === "learned" ? "learned" : "default",
             text: learning.mode === "learned"
-                ? "No past correction was close enough to this song, so this is the model's own reading."
+                ? "No past correction was close enough to this song, so this is the model's own reading." + following
                 : "Default reading. Learned corrections were switched off."
         };
     }
@@ -214,7 +308,6 @@
         if (!data || !data.analysis_id) return;
 
         state.current = data;
-        state.original = data;
 
         var body = document.getElementById("body");
         if (!body) return;
@@ -316,14 +409,13 @@
     function blink(row) {
         var led = row.querySelector(".led");
         led.classList.remove("blink");
-        void led.offsetWidth;            // restart the animation from the top
+        void led.offsetWidth;
         led.classList.add("blink");
     }
 
     function buildPicker(list, input, options) {
         var node = el("div", "picker");
 
-        // At rest: the current value and nothing else.
         var trigger = el("button", "picker-trigger");
         trigger.type = "button";
         trigger.setAttribute("aria-haspopup", "true");
@@ -336,7 +428,6 @@
         trigger.appendChild(valueText);
         trigger.appendChild(caret);
 
-        // Manual typing swaps the trigger out for this.
         var freeWrap = el("div", "free-wrap");
         freeWrap.hidden = true;
         var back = el("button", "picker-back", "▾");
@@ -351,13 +442,10 @@
         var listWrap = el("div", "picker-list");
         listWrap.hidden = true;
 
-        var listRow = null;
-        var freeRow = null;
-
         if (!options.strict) {
             var modes = el("div", "picker-modes");
-            listRow = ledRow("Choose from the list");
-            freeRow = ledRow("Type manually");
+            var listRow = ledRow("Choose from the list");
+            var freeRow = ledRow("Type manually");
             modes.appendChild(listRow);
             modes.appendChild(freeRow);
             menu.appendChild(modes);
@@ -373,7 +461,6 @@
                 blink(freeRow);
                 freeRow.classList.add("on");
                 listRow.classList.remove("on");
-                // Let the light register before the panel moves out from under it.
                 setTimeout(function () {
                     close();
                     trigger.hidden = true;
@@ -433,7 +520,7 @@
         function open() {
             var room = window.innerHeight - trigger.getBoundingClientRect().bottom;
             node.classList.toggle("up", room < 300);
-            listWrap.hidden = !options.strict;   // a closed set has no mode to choose
+            listWrap.hidden = !options.strict;
             menu.hidden = false;
             trigger.setAttribute("aria-expanded", "true");
             document.addEventListener("mousedown", onOutside, true);
@@ -453,7 +540,7 @@
 
         function onKey(event) {
             if (event.key !== "Escape") return;
-            event.stopPropagation();          // close the menu, not the whole drawer
+            event.stopPropagation();
             close();
             trigger.focus();
         }
@@ -487,9 +574,11 @@
         var wrap = el("div", "field");
         var labelNode = el("label", null, label);
         labelNode.setAttribute("for", id);
+        if (options.required) {
+            labelNode.appendChild(el("span", "required", " · required"));
+        }
         wrap.appendChild(labelNode);
 
-        // Plain text or prose: no list, nothing to choose from.
         if (!options.list) {
             var plain = options.multiline
                 ? document.createElement("textarea")
@@ -512,8 +601,6 @@
             return plain;
         }
 
-        // The input is the single source of truth in both modes; while the
-        // list is showing it sits hidden and the picker writes into it.
         var input = document.createElement("input");
         input.type = "text";
         input.id = id;
@@ -587,8 +674,9 @@
     function openEditor(data) {
         var shell = openDrawer(
             "Correct this reading",
-            "Change what the model got wrong, then say why. The reasoning is what "
-            + "teaches the next reading; a changed number on its own teaches very little."
+            "Change what the model got wrong, then say who you are and why. The "
+            + "reasoning is what teaches the next reading; a changed number on its "
+            + "own teaches very little."
         );
 
         var body = shell.body;
@@ -599,7 +687,18 @@
         group(body, "Verdict");
 
         var primary = textField(body, "edit-primary", "Primary emotion",
-            data.primary_emotion, { list: LABELS.slice(), swatch: true });
+            data.primary_emotion, {
+                list: LABELS.slice(),
+                swatch: true,
+                hint: "your own words, joined with / when one will not do"
+            });
+
+        var canonical = textField(body, "edit-canonical", "Canonical emotion",
+            data.canonical_emotion, {
+                list: LABELS.slice(),
+                swatch: true,
+                hint: "the same reading in closed-set labels, so readings stay countable"
+            });
 
         var secondary = textField(body, "edit-secondary",
             "Secondary emotions, comma separated", data.secondary_emotions,
@@ -623,8 +722,6 @@
         var arousal = sliderField(body, "edit-arousal", "Arousal",
             data.arousal, -1, 1, data.arousal);
 
-        // Closed set: Q1 to Q4 are defined by the signs of valence and arousal,
-        // so a typed value here could only contradict the two sliders above.
         var quadrant = textField(body, "edit-quadrant", "Quadrant", data.quadrant, {
             list: ["Q1", "Q2", "Q3", "Q4"],
             strict: true,
@@ -663,8 +760,11 @@
 
         group(body, "Who and why");
 
-        var editor = textField(body, "edit-editor", "Reviewer", "",
-            { placeholder: "Your name, so the log shows who decided this" });
+        var editor = textField(body, "edit-editor", "Expert", rememberedName(), {
+            required: true,
+            placeholder: "Your name",
+            hint: "corrections are attributed, so a reading can be asked to follow you"
+        });
 
         var note = textField(body, "edit-note", "Why the model was wrong", "", {
             multiline: true,
@@ -685,11 +785,21 @@
 
         save.addEventListener("click", async function () {
             errorSlot.innerHTML = "";
+
+            if (!editor.value.trim()) {
+                errorSlot.appendChild(el("div", "drawer-error",
+                    "Put your name to this correction first. It decides whose "
+                    + "judgement the model can be asked to follow later."));
+                editor.focus();
+                return;
+            }
+
             save.disabled = true;
             save.textContent = "Saving";
 
             var corrected = {
                 primary_emotion: primary.value.trim(),
+                canonical_emotion: canonical.value.trim(),
                 secondary_emotions: secondary.value,
                 mixed_emotion: mixed.checked,
                 valence: number(valence.value),
@@ -707,23 +817,21 @@
             };
 
             try {
-                var result = await api("/correction", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        analysis_id: data.analysis_id,
-                        corrected: corrected,
-                        editor: editor.value,
-                        note: note.value
-                    })
+                var result = await post("/correction", {
+                    analysis_id: data.analysis_id,
+                    corrected: corrected,
+                    editor: editor.value,
+                    note: note.value
                 });
 
+                rememberName(editor.value.trim());
                 closeDrawer();
                 repaint(result.corrected, data, result);
+                refreshExperts();
                 toast(result.embedded
-                    ? "Correction saved. It will guide similar songs from now on."
-                    : "Correction saved. Embeddings were unavailable, so it will "
-                    + "apply to this exact song only.");
+                    ? "Saved under " + result.editor + ". It will guide similar songs now."
+                    : "Saved under " + result.editor + ". Embeddings were unavailable, "
+                    + "so it applies to this exact song only.");
             } catch (error) {
                 errorSlot.appendChild(el("div", "drawer-error", error.message));
                 save.disabled = false;
@@ -741,7 +849,8 @@
             source: "correction",
             correction_id: result.correction_id,
             edited_at: new Date().toISOString(),
-            editor: null,
+            editor: result.editor,
+            experts: [],
             matches: []
         };
         if (typeof window.renderResult === "function") {
@@ -757,7 +866,8 @@
     function openMatches(matches) {
         var shell = openDrawer(
             "What shaped this reading",
-            "Past corrections the analyser was shown before reading this song."
+            "Past corrections the analyser was shown before reading this song, "
+            + "in the order it was told to weigh them."
         );
 
         matches.forEach(function (match) {
@@ -767,6 +877,10 @@
             top.appendChild(el("p", "log-excerpt", match.excerpt));
             top.appendChild(el("span", "log-meta", "similarity " + match.similarity));
             row.appendChild(top);
+
+            var by = el("div", "log-by");
+            by.appendChild(el("span", "editor-chip", match.editor));
+            row.appendChild(by);
 
             var fields = el("div", "log-fields");
             (match.fields || []).forEach(function (field) {
@@ -786,14 +900,79 @@
 
 
     /* =========================
+       EXPERT STANDINGS
+    ========================= */
+
+    function rankingBlock(experts, ranking) {
+        var wrap = el("div", "standings");
+        wrap.appendChild(el("div", "group-title", "Expert standings"));
+
+        var blurb = el("p", "log-note",
+            "Rank your top three. When several corrections match the same song, "
+            + "the model is told to prefer the higher-ranked expert.");
+        wrap.appendChild(blurb);
+
+        var selects = [];
+
+        ["First", "Second", "Third"].forEach(function (place, index) {
+            var row = el("div", "rank-row");
+            row.appendChild(el("span", "rank-place", "#" + (index + 1)));
+
+            var select = document.createElement("select");
+            var none = document.createElement("option");
+            none.value = "";
+            none.textContent = "Nobody";
+            select.appendChild(none);
+
+            experts.forEach(function (expert) {
+                var option = document.createElement("option");
+                option.value = expert.name;
+                option.textContent = expert.name + " · " + expert.teaching
+                    + (expert.teaching === 1 ? " edit" : " edits");
+                select.appendChild(option);
+            });
+
+            select.value = ranking[index] || "";
+            selects.push(select);
+            row.appendChild(select);
+            wrap.appendChild(row);
+        });
+
+        var save = el("button", "secondary rank-save", "Save standings");
+        save.type = "button";
+        save.addEventListener("click", async function () {
+            var chosen = [];
+            selects.forEach(function (select) {
+                if (select.value && chosen.indexOf(select.value) === -1) {
+                    chosen.push(select.value);
+                }
+            });
+            try {
+                var result = await post("/experts/ranking", { ranking: chosen });
+                state.ranking = result.ranking || [];
+                fillExpertSelect(document.getElementById("expert-select"));
+                toast(state.ranking.length
+                    ? "Standings saved: " + state.ranking.join(" then ") + "."
+                    : "Standings cleared. Every expert is weighed equally.");
+            } catch (error) {
+                toast(error.message);
+            }
+        });
+        wrap.appendChild(save);
+
+        return wrap;
+    }
+
+
+    /* =========================
        REVIEW LOG
     ========================= */
 
     async function openLog() {
         var shell = openDrawer(
             "Review log",
-            "Every correction on file. Retiring one keeps the record but stops it "
-            + "teaching from the next reading onward."
+            "Who changed what, and whose judgement is still teaching. Retiring a "
+            + "correction keeps the record but stops it shaping later readings."
         );
 
         shell.body.appendChild(el("p", "log-empty", "Loading…"));
@@ -801,6 +980,9 @@
         try {
             var data = await api("/corrections?limit=100");
             shell.body.innerHTML = "";
+
+            state.experts = data.experts || [];
+            state.ranking = data.ranking || [];
 
             var stats = data.stats || {};
             var summary = el("p", "drawer-note");
@@ -812,9 +994,29 @@
                 : "No corrections yet. Read a song, then edit what the model got wrong.";
             shell.body.appendChild(summary);
 
+            if (state.experts.length) {
+                shell.body.appendChild(rankingBlock(state.experts, state.ranking));
+                shell.body.appendChild(el("div", "group-title", "Every correction"));
+            }
+
             (data.corrections || []).forEach(function (correction) {
                 shell.body.appendChild(logRow(correction));
             });
+
+            // The headcount the drawer closes on.
+            var people = stats.experts || state.experts.length;
+            var tally = el("div", "log-tally");
+            tally.innerHTML = "<b>" + people + "</b> "
+                + (people === 1 ? "person has" : "different people have")
+                + " edited readings here"
+                + (state.experts.length
+                    ? ": " + escapeHTML(state.experts.map(function (e) {
+                        return e.name + " (" + e.corrections + ")";
+                    }).join(", "))
+                    : "") + ".";
+            shell.body.appendChild(tally);
+
+            fillExpertSelect(document.getElementById("expert-select"));
         } catch (error) {
             shell.body.innerHTML = "";
             shell.body.appendChild(el("div", "drawer-error", error.message));
@@ -831,10 +1033,19 @@
 
         var top = el("div", "log-top");
         top.appendChild(el("p", "log-excerpt", correction.excerpt));
-        top.appendChild(el("span", "log-meta",
-            (correction.created_at || "").slice(0, 10)
-            + (correction.editor ? " · " + correction.editor : "")));
+        top.appendChild(el("span", "log-meta", (correction.created_at || "").slice(0, 10)));
         row.appendChild(top);
+
+        var by = el("div", "log-by");
+        var chip = el("span", "editor-chip", correction.editor);
+        var standing = state.ranking.indexOf(correction.editor);
+        if (standing !== -1) {
+            chip.classList.add("ranked");
+            chip.appendChild(el("span", "rank-badge", "#" + (standing + 1)));
+        }
+        by.appendChild(chip);
+        if (!correction.active) by.appendChild(el("span", "log-meta", "retired"));
+        row.appendChild(by);
 
         var fields = el("div", "log-fields");
         Object.keys(correction.changed || {}).forEach(function (field) {
@@ -852,16 +1063,14 @@
         toggle.type = "button";
         toggle.addEventListener("click", async function () {
             try {
-                var result = await api("/correction/" + correction.id + "/retire", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ restore: !correction.active })
-                });
+                var result = await post("/correction/" + correction.id + "/retire",
+                    { restore: !correction.active });
                 correction.active = result.active ? 1 : 0;
                 row.classList.toggle("retired", !result.active);
                 toggle.textContent = result.active
                     ? "Retire this correction"
                     : "Put it back to work";
+                refreshExperts();
                 toast(result.active ? "Teaching again." : "Retired. It stops teaching now.");
             } catch (error) {
                 toast(error.message);

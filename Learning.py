@@ -5,39 +5,42 @@ There is no fine-tuning here and there should not be: a handful of expert edits
 is far too little to train on, and retraining would bury the reviewer's
 reasoning inside weights where nobody can inspect or withdraw it. Instead the
 corrections stay as rows, and the closest ones are handed back to the model as
-evidence at the moment it reads a new song. Retire a correction and its
-influence disappears on the next request.
+evidence at the moment it reads a new song.
 
-Two levels of recall:
+Corrections are attributed. Two experts can disagree about the same repertoire,
+so a reading can be asked to follow one of them, and a ranking decides who is
+heard first when several have something to say about the same song.
 
   exact      the same lyrics have been corrected before, so serve that
              correction instead of asking the model again
   similar    a nearby song has been corrected, so append the reviewer's
              changes and reasoning to the input as guidance
-
-Similarity is cosine distance between embeddings of the composed input. If the
-embedding service is unavailable the module degrades to exact matching only and
-says so, rather than failing the request.
 """
 
 import json
 import math
 import os
 
-import Database
+try:                        # filenames differ in case between machines
+    import database
+except ImportError:         # pragma: no cover
+    import Database as database
 
 # --- tuning knobs --------------------------------------------------------
 
-THRESHOLD = float(os.getenv("LYRIQ_MATCH_THRESHOLD", "0.82"))
+THRESHOLD = float(os.getenv("LYRIQ_MATCH_THRESHOLD", "0.78"))
 MAX_MATCHES = int(os.getenv("LYRIQ_MAX_MATCHES", "3"))
 
-# Fields worth comparing between the model's verdict and the expert's. Anything
-# outside this list is stored but not turned into a teaching line.
+# Preference keys, shared with review.py and app.py.
+FILTER_KEY = "expert_filter"     # whose corrections to hear, [] means everyone
+RANK_KEY = "expert_rank"         # ordered list, best first, at most three
+
 WATCHED = [
     "valence",
     "arousal",
     "quadrant",
     "primary_emotion",
+    "canonical_emotion",
     "secondary_emotions",
     "mixed_emotion",
     "rasa",
@@ -50,17 +53,17 @@ WATCHED = [
     "recommendation_tags",
 ]
 
-# Long free text is summarised rather than quoted in full when teaching.
 LONG_FIELDS = {"summary", "music_therapy"}
 
 GUIDANCE_HEADER = (
     "\n\n=== Reviewer corrections on similar songs ===\n"
-    "A human expert reviewed earlier readings of songs close to this one and "
-    "changed them as listed below. Treat this as evidence about how this "
-    "reviewer reads this repertoire, not as facts about the present song. "
-    "Apply the same reasoning where it fits the words in front of you, and "
-    "ignore it where it does not. Do not copy a previous verdict onto a "
-    "different song, and do not mention these notes in your output.\n"
+    "Human experts reviewed earlier readings of songs close to this one and "
+    "changed them as listed below, each attributed to the reviewer who made it. "
+    "Treat this as evidence about how these reviewers read this repertoire, not "
+    "as facts about the present song. Apply the same reasoning where it fits the "
+    "words in front of you, and ignore it where it does not. Where reviewers "
+    "disagree, prefer the one listed first. Do not copy a previous verdict onto "
+    "a different song, and do not mention these notes in your output.\n"
 )
 
 
@@ -74,7 +77,13 @@ def _get_embedder():
     global _embedder
     if _embedder is None:
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
-        _embedder = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-004")
+        key = os.getenv("GOOGLE_API_KEY")
+        if not key:
+            raise RuntimeError("GOOGLE_API_KEY is not set; embeddings cannot run.")
+        _embedder = GoogleGenerativeAIEmbeddings(
+            model="models/gemini-embedding-001",
+            google_api_key=key,
+        )
     return _embedder
 
 
@@ -97,6 +106,28 @@ def _cosine(a, b):
     return dot / (left * right)
 
 
+# --- stored choices ------------------------------------------------------
+
+def stored_filter():
+    """Names whose corrections are currently in play; empty list means all."""
+    names = database.get_json_preference(FILTER_KEY, [])
+    return [str(n) for n in names] if isinstance(names, list) else []
+
+
+def stored_ranking():
+    """Experts in order of standing, best first, at most three."""
+    names = database.get_json_preference(RANK_KEY, [])
+    return [str(n) for n in names][:3] if isinstance(names, list) else []
+
+
+def _rank_of(editor, ranking):
+    """Position in the ranking, or a large number for everyone unranked."""
+    try:
+        return ranking.index(editor)
+    except ValueError:
+        return len(ranking) + 99
+
+
 # --- diffing -------------------------------------------------------------
 
 def _comparable(value):
@@ -112,18 +143,14 @@ def _comparable(value):
 
 
 def _normalise(field, value):
-    """Flatten differences of format so they are not mistaken for judgements.
-
-    analyze() returns quadrant as "Q3 - sad / depressed" while the editor sends
-    back "Q3". That is the same verdict written two ways, and teaching it as a
-    correction would fill the guidance block with noise.
-    """
+    """Flatten differences of format so they are not mistaken for judgements."""
     text = _comparable(value)
     if field == "quadrant":
         return text[:2].upper()
     if field in ("secondary_emotions", "recommendation_tags"):
-        return ", ".join(sorted(part.strip().lower() for part in text.split(",") if part.strip()))
-    if field in ("primary_emotion", "rasa", "parjaay", "tradition", "language"):
+        return ", ".join(sorted(p.strip().lower() for p in text.split(",") if p.strip()))
+    if field in ("primary_emotion", "canonical_emotion", "rasa",
+                 "parjaay", "tradition", "language"):
         return text.strip().lower()
     return text
 
@@ -141,8 +168,6 @@ def changes(original, corrected):
         after = _normalise(field, corrected.get(field))
         if before == after:
             continue
-        # A field the model never produced, arriving empty from the form, is
-        # the form filling a blank rather than the reviewer deciding anything.
         if field not in original and after.lower() in _EMPTY:
             continue
         out[field] = {
@@ -155,19 +180,15 @@ def changes(original, corrected):
 # --- writing -------------------------------------------------------------
 
 def remember(analysis_id, corrected, editor=None, note=None):
-    """Store one expert edit against the reading it corrects.
-
-    Returns the correction row. The embedding is computed here, once, so that
-    reading time stays a single vector comparison over rows already in memory.
-    """
-    analysis = Database.get_analysis(analysis_id)
+    """Store one expert edit against the reading it corrects."""
+    analysis = database.get_analysis(analysis_id)
     if analysis is None:
         raise ValueError(f"No analysis with id {analysis_id}.")
 
     original = analysis["output"]
     diff = changes(original, corrected)
 
-    correction_id = Database.save_correction(
+    correction_id = database.save_correction(
         analysis_id=analysis_id,
         original=original,
         corrected=corrected,
@@ -176,19 +197,25 @@ def remember(analysis_id, corrected, editor=None, note=None):
         note=note,
         embedding=embed(analysis["input_text"]),
     )
-    return Database.get_correction(correction_id)
+    return database.get_correction(correction_id)
 
 
 # --- reading -------------------------------------------------------------
 
-def exact_correction(text):
+def exact_correction(text, editors=None):
     """A correction for byte-identical input, or None."""
-    return Database.correction_for(text)
+    return database.correction_for(text, editors=editors)
 
 
-def similar_corrections(text, limit=MAX_MATCHES, threshold=THRESHOLD):
-    """The nearest corrections to this song, best first."""
-    pool = Database.active_corrections(with_vector=True)
+def similar_corrections(text, limit=MAX_MATCHES, threshold=THRESHOLD,
+                        editors=None, ranking=None):
+    """The nearest corrections to this song.
+
+    Ordered by the expert ranking first and similarity second, so a ranked
+    reviewer's correction is heard before an unranked one that happens to
+    score a little higher.
+    """
+    pool = database.active_corrections(with_vector=True, editors=editors)
     if not pool:
         return []
 
@@ -196,16 +223,18 @@ def similar_corrections(text, limit=MAX_MATCHES, threshold=THRESHOLD):
     if vector is None:
         return []
 
+    ranking = ranking or []
     scored = []
     for correction in pool:
         score = _cosine(vector, correction.get("embedding"))
         if score >= threshold:
             correction = dict(correction)
             correction["similarity"] = round(score, 3)
+            correction["rank"] = _rank_of(correction["editor"], ranking)
             correction.pop("embedding", None)
             scored.append(correction)
 
-    scored.sort(key=lambda c: c["similarity"], reverse=True)
+    scored.sort(key=lambda c: (c["rank"], -c["similarity"]))
     return scored[:limit]
 
 
@@ -223,13 +252,14 @@ def _teaching_lines(correction):
     return lines
 
 
-def guidance_for(text, limit=MAX_MATCHES, threshold=THRESHOLD):
+def guidance_for(text, limit=MAX_MATCHES, threshold=THRESHOLD,
+                 editors=None, ranking=None):
     """Build the block appended to the analyser's input.
 
-    Returns (block, matches). block is "" when there is nothing to teach, which
-    means a lyrics-only request reaches analyze() exactly as it does today.
+    Returns (block, matches). block is "" when there is nothing to teach, so a
+    lyrics-only request reaches analyze() exactly as it does without any of this.
     """
-    matches = similar_corrections(text, limit, threshold)
+    matches = similar_corrections(text, limit, threshold, editors, ranking)
     if not matches:
         return "", []
 
@@ -238,7 +268,8 @@ def guidance_for(text, limit=MAX_MATCHES, threshold=THRESHOLD):
         lines = _teaching_lines(correction)
         if not lines:
             continue
-        head = (f"\nSimilar song {index}, similarity {correction['similarity']}, "
+        head = (f"\nSimilar song {index}, reviewed by {correction['editor']}, "
+                f"similarity {correction['similarity']}, "
                 f"opening {correction['excerpt'][:70]}")
         blocks.append(head + "\n" + "\n".join(lines))
 
@@ -253,6 +284,7 @@ def summarise(matches):
     return [
         {
             "correction_id": match["id"],
+            "editor": match["editor"],
             "similarity": match["similarity"],
             "excerpt": match["excerpt"],
             "fields": list((match.get("changed") or {}).keys()),
@@ -264,7 +296,10 @@ def summarise(matches):
 
 def health():
     """Whether learned mode can do anything useful right now."""
-    counts = Database.stats()
+    counts = database.stats()
     counts["embeddings_available"] = embed("test") is not None
     counts["threshold"] = THRESHOLD
+    counts["max_matches"] = MAX_MATCHES
+    counts["expert_filter"] = stored_filter()
+    counts["expert_rank"] = stored_ranking()
     return counts

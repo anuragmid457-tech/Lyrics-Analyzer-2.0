@@ -5,15 +5,20 @@ Nothing here knows about Flask, prompts or embeddings. It stores rows and
 returns dicts. learning.py decides what the rows mean; review.py decides who
 is allowed to write them.
 
-    init()                          create the tables, safe to call every boot
-    save_analysis(...)      -> id   record a reading
+Corrections carry the name of the expert who made them, so a reading can be
+asked to follow one person's judgement rather than the pooled average of
+everyone who has ever edited.
+
+    init()                              create the tables, safe every boot
+    save_analysis(...)      -> id       record a reading
     get_analysis(id)        -> dict
-    save_correction(...)    -> id   record what an expert changed
-    active_corrections()    -> list rows that are still teaching
-    correction_for(fp)      -> dict newest correction for an identical input
-    retire_correction(id)           stop a correction teaching, keep the record
+    save_correction(...)    -> id       record what an expert changed
+    active_corrections(...) -> list     rows still teaching, optionally by expert
+    correction_for(fp, ...) -> dict     newest correction for identical input
+    experts()               -> list     who has corrected, and how much
+    retire_correction(id)               stop one teaching, keep the record
     get_preference / set_preference
-    stats()                 -> dict counts for the review panel
+    stats()                 -> dict     counts for the review panel
 """
 
 import hashlib
@@ -28,6 +33,9 @@ HERE = Path(__file__).parent
 
 DB_PATH = os.getenv("LYRIQ_DB", str(HERE / "lyriq.db"))
 SCHEMA_PATH = HERE / "schema.sql"
+
+# Corrections saved before names were required show up under this.
+UNATTRIBUTED = "Unattributed"
 
 
 # --- plumbing ------------------------------------------------------------
@@ -61,12 +69,7 @@ def _json(value, fallback=None):
 
 
 def fingerprint(text: str) -> str:
-    """Hash of the input with case and whitespace flattened.
-
-    Two submissions of the same song with different indentation land on the
-    same fingerprint, which is what makes "you have corrected this one before"
-    work without an embedding call.
-    """
+    """Hash of the input with case and whitespace flattened."""
     flat = re.sub(r"\s+", " ", (text or "")).strip().lower()
     return hashlib.sha256(flat.encode("utf-8")).hexdigest()
 
@@ -74,6 +77,30 @@ def fingerprint(text: str) -> str:
 def excerpt(text: str, limit: int = 120) -> str:
     flat = re.sub(r"\s+", " ", (text or "")).strip()
     return flat[:limit] + ("…" if len(flat) > limit else "")
+
+
+def _editor_clause(editors):
+    """SQL fragment restricting rows to a list of expert names.
+
+    UNATTRIBUTED stands for the rows saved before a name was required, which
+    are stored as NULL or blank rather than under any name.
+    """
+    if not editors:
+        return "", []
+
+    names = [str(name).strip() for name in editors if str(name).strip()]
+    if not names:
+        return "", []
+
+    parts, params = [], []
+    if UNATTRIBUTED in names:
+        parts.append("(editor IS NULL OR TRIM(editor) = '')")
+        names = [n for n in names if n != UNATTRIBUTED]
+    if names:
+        parts.append("TRIM(editor) IN (%s)" % ",".join("?" for _ in names))
+        params.extend(names)
+
+    return " AND (" + " OR ".join(parts) + ")", params
 
 
 # --- analyses ------------------------------------------------------------
@@ -161,6 +188,7 @@ def _hydrate_correction(record, with_vector=False):
     record["original"] = _json(record.get("original"), {})
     record["corrected"] = _json(record.get("corrected"), {})
     record["changed"] = _json(record.get("changed"), {})
+    record["editor"] = (record.get("editor") or "").strip() or UNATTRIBUTED
     vector = _json(record.pop("embedding", None), None)
     if with_vector:
         record["embedding"] = vector
@@ -168,35 +196,41 @@ def _hydrate_correction(record, with_vector=False):
     return record
 
 
-def active_corrections(with_vector=True, limit=400):
-    """Every correction still allowed to teach, newest first."""
+def active_corrections(with_vector=True, limit=400, editors=None):
+    """Every correction still allowed to teach, newest first.
+
+    Pass editors to hear from named experts only.
+    """
+    clause, params = _editor_clause(editors)
     with connect() as conn:
         rows = conn.execute(
-            """SELECT * FROM corrections
-                WHERE active = 1
-             ORDER BY created_at DESC, id DESC
-                LIMIT ?""",
-            (limit,),
+            f"""SELECT * FROM corrections
+                 WHERE active = 1{clause}
+              ORDER BY created_at DESC, id DESC
+                 LIMIT ?""",
+            params + [limit],
         ).fetchall()
     return [_hydrate_correction(row, with_vector) for row in rows]
 
 
-def list_corrections(limit=50, include_retired=True):
+def list_corrections(limit=50, include_retired=True, editors=None):
     """For the review log. Vectors stripped, they are noise on screen."""
-    clause = "" if include_retired else "WHERE active = 1"
+    clause, params = _editor_clause(editors)
+    where = "WHERE 1 = 1" if include_retired else "WHERE active = 1"
     with connect() as conn:
         rows = conn.execute(
             f"""SELECT id, created_at, analysis_id, excerpt, changed,
                        editor, note, active
-                  FROM corrections {clause}
+                  FROM corrections {where}{clause}
               ORDER BY created_at DESC, id DESC
                  LIMIT ?""",
-            (limit,),
+            params + [limit],
         ).fetchall()
     out = []
     for row in rows:
         record = dict(row)
         record["changed"] = _json(record["changed"], {})
+        record["editor"] = (record.get("editor") or "").strip() or UNATTRIBUTED
         out.append(record)
     return out
 
@@ -209,15 +243,16 @@ def get_correction(correction_id, with_vector=False):
     return _hydrate_correction(record, with_vector) if record else None
 
 
-def correction_for(text):
+def correction_for(text, editors=None):
     """Newest active correction for an input identical to this one."""
+    clause, params = _editor_clause(editors)
     with connect() as conn:
         record = conn.execute(
-            """SELECT * FROM corrections
-                WHERE fingerprint = ? AND active = 1
-             ORDER BY created_at DESC, id DESC
-                LIMIT 1""",
-            (fingerprint(text),),
+            f"""SELECT * FROM corrections
+                 WHERE fingerprint = ? AND active = 1{clause}
+              ORDER BY created_at DESC, id DESC
+                 LIMIT 1""",
+            [fingerprint(text)] + params,
         ).fetchone()
     return _hydrate_correction(record) if record else None
 
@@ -230,6 +265,24 @@ def retire_correction(correction_id, active=False):
             (1 if active else 0, correction_id),
         )
     return get_correction(correction_id)
+
+
+# --- experts -------------------------------------------------------------
+
+def experts():
+    """Who has corrected readings, and how much of it still teaches."""
+    with connect() as conn:
+        rows = conn.execute(
+            """SELECT COALESCE(NULLIF(TRIM(editor), ''), ?) AS name,
+                      COUNT(*)                              AS corrections,
+                      SUM(active)                           AS teaching,
+                      MAX(created_at)                       AS last_edit
+                 FROM corrections
+             GROUP BY name
+             ORDER BY teaching DESC, corrections DESC, name ASC""",
+            (UNATTRIBUTED,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 # --- preferences ---------------------------------------------------------
@@ -255,17 +308,28 @@ def set_preference(key, value):
     return get_preference(key)
 
 
+def get_json_preference(key, fallback=None):
+    return _json(get_preference(key), fallback if fallback is not None else [])
+
+
+def set_json_preference(key, value):
+    return set_preference(key, json.dumps(value, ensure_ascii=False))
+
+
 # --- summary -------------------------------------------------------------
 
 def stats():
     with connect() as conn:
         row = conn.execute(
             """SELECT
-                 (SELECT COUNT(*) FROM analyses)                        AS analyses,
-                 (SELECT COUNT(*) FROM corrections)                     AS corrections,
-                 (SELECT COUNT(*) FROM corrections WHERE active = 1)    AS teaching,
+                 (SELECT COUNT(*) FROM analyses)                     AS analyses,
+                 (SELECT COUNT(*) FROM corrections)                  AS corrections,
+                 (SELECT COUNT(*) FROM corrections WHERE active = 1) AS teaching,
                  (SELECT COUNT(*) FROM corrections
-                   WHERE active = 1 AND embedding IS NOT NULL)          AS embedded,
-                 (SELECT MAX(created_at) FROM corrections)              AS last_edit"""
+                   WHERE active = 1 AND embedding IS NOT NULL)       AS embedded,
+                 (SELECT COUNT(DISTINCT COALESCE(NULLIF(TRIM(editor), ''), ?))
+                    FROM corrections)                                AS experts,
+                 (SELECT MAX(created_at) FROM corrections)           AS last_edit""",
+            (UNATTRIBUTED,),
         ).fetchone()
     return dict(row)

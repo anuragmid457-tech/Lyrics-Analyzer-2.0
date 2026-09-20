@@ -33,11 +33,15 @@ ANNOTATION FRAMEWORK (follow all three layers):
      "Q3 - sad / depressed"   (low valence, low arousal)
      "Q4 - calm / relaxed"    (high valence, low arousal)
 
-2. Categorical — choose ONE primary_emotion from this closed label set:
-   love, longing (viraha), sadness, grief, nostalgia, anger, fear,
-   anxiety, peace,SEX (kaamasutra),BDMS, devotion (bhakti), spiritual_yearning, hope, patriotism,
-   playfulness, loneliness, acceptance, wonder
-   Then list 1-3 secondary_emotions from the same set.
+2. Categorical — give TWO labels:
+   primary_emotion: your own words for the exact vibe. One to three terms joined
+     with "/" when a single word will not do. 
+   canonical_emotion: the same reading mapped onto this closed set —
+     joy, love, longing, sadness, grief, nostalgia, anger, fear, anxiety, peace,
+     devotion, spiritual_yearning, hope, patriotism, playfulness, loneliness,
+     acceptance, wonder. One to three of these joined with "/", strongest first,
+     and nothing outside the set.
+   Then list 1-3 secondary_emotions from the closed set.
 
 3. Cultural — where the text belongs to a South Asian or Sufi tradition, add the closest
    classical rasa (shringara, karuna, shanta, bhakti, veera, adbhuta, hasya, raudra, bhayanaka,

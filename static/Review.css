@@ -1,6 +1,6 @@
 /* =========================
    REVIEW LAYER
-   Correction drawer, learned-mode switch, provenance badge, picker.
+   Correction drawer, learned-mode switch, expert filter, picker, log.
    Uses the LYRIQ tokens already on :root, adds none of its own.
 ========================= */
 
@@ -58,6 +58,63 @@
     color:var(--muted);
 
     font-size:11px;
+}
+
+.expert-filter{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:9px;
+
+    padding:0 4px 0 13px;
+
+    border:1px solid var(--line);
+
+    border-radius:10px;
+}
+
+.expert-filter[hidden]{
+    display:none;
+}
+
+.expert-filter label{
+
+    margin:0;
+
+    color:var(--muted);
+
+    font-size:10px;
+
+    letter-spacing:.14em;
+
+    text-transform:uppercase;
+
+    white-space:nowrap;
+}
+
+.expert-filter select{
+
+    width:auto;
+
+    min-width:150px;
+
+    background:transparent;
+
+    border:0;
+
+    border-radius:0;
+
+    padding:11px 4px;
+
+    color:var(--soft);
+
+    font-size:12px;
+}
+
+.expert-filter select:focus{
+    box-shadow:none;
 }
 
 .review-log-open{
@@ -350,6 +407,8 @@
     font-size:11px;
 
     margin-top:5px;
+
+    overflow-wrap:anywhere;
 }
 
 .was b{
@@ -385,6 +444,8 @@
     font-size:12px;
 
     margin:0 0 16px;
+
+    line-height:1.5;
 }
 
 .group-title{
@@ -415,9 +476,6 @@
 
 /* =========================
    PICKER
-   One control at rest. Click it and a panel offers the two ways in, each
-   with an indicator light. Instrument-panel language throughout: inset
-   wells, hairline rails, one gold channel marking the live state.
 ========================= */
 
 .picker{
@@ -432,8 +490,6 @@
 .free-wrap[hidden]{
     display:none;
 }
-
-/* --- resting control --- */
 
 .picker-trigger{
 
@@ -552,8 +608,6 @@
     flex:none;
 }
 
-/* --- manual typing --- */
-
 .free-wrap{
 
     display:flex;
@@ -617,8 +671,6 @@
     border-color:rgba(216,173,85,.4);
 }
 
-/* --- menu --- */
-
 .picker-menu{
 
     position:absolute;
@@ -665,8 +717,6 @@
         transform:translateY(-4px);
     }
 }
-
-/* --- the two ways in --- */
 
 .picker-modes{
 
@@ -732,8 +782,6 @@
     outline-offset:2px;
 }
 
-/* the indicator light */
-
 .led{
 
     width:8px;
@@ -797,8 +845,6 @@
 
 }
 
-/* --- the labels --- */
-
 .picker-list[hidden]{
     display:none;
 }
@@ -857,7 +903,7 @@
 
 .picker-option.on::after{
 
-    content:"✓";
+    content:"\2713";
 
     margin-left:auto;
 
@@ -879,7 +925,57 @@
     border-radius:99px;
 }
 
-/* --- review log --- */
+/* =========================
+   EXPERT STANDINGS
+========================= */
+
+.standings{
+    margin-bottom:8px;
+}
+
+.rank-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:11px;
+
+    margin-bottom:9px;
+}
+
+.rank-place{
+
+    flex:none;
+
+    width:28px;
+
+    color:var(--gold);
+
+    font-size:12px;
+
+    font-variant-numeric:tabular-nums;
+}
+
+.rank-row select{
+
+    flex:1;
+
+    padding:10px 12px;
+
+    font-size:12px;
+}
+
+.rank-save{
+
+    width:100%;
+
+    margin-top:6px;
+}
+
+/* =========================
+   REVIEW LOG
+========================= */
 
 .log-row{
 
@@ -912,6 +1008,8 @@
     color:var(--soft);
 
     margin:0;
+
+    overflow-wrap:anywhere;
 }
 
 .log-meta{
@@ -921,6 +1019,54 @@
     font-size:11px;
 
     flex:none;
+}
+
+.log-by{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    margin-top:9px;
+}
+
+.editor-chip{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:4px 11px;
+
+    border:1px solid var(--line);
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.02);
+
+    color:var(--soft);
+
+    font-size:11px;
+}
+
+.editor-chip.ranked{
+
+    border-color:rgba(216,173,85,.4);
+
+    color:var(--gold);
+}
+
+.rank-badge{
+
+    color:var(--gold);
+
+    font-size:10px;
+
+    font-variant-numeric:tabular-nums;
 }
 
 .log-fields{
@@ -943,6 +1089,10 @@
     margin:9px 0 0;
 
     line-height:1.5;
+
+    white-space:pre-wrap;
+
+    overflow-wrap:anywhere;
 }
 
 .log-actions{
@@ -970,7 +1120,8 @@
 }
 
 .log-row.retired .log-excerpt,
-.log-row.retired .log-fields{
+.log-row.retired .log-fields,
+.log-row.retired .log-by{
     opacity:.45;
 }
 
@@ -979,6 +1130,32 @@
     color:var(--muted);
 
     font-size:13px;
+}
+
+.log-tally{
+
+    margin-top:22px;
+
+    padding-top:16px;
+
+    border-top:1px solid var(--line);
+
+    color:var(--muted);
+
+    font-size:12px;
+
+    line-height:1.55;
+
+    overflow-wrap:anywhere;
+}
+
+.log-tally b{
+
+    color:var(--gold);
+
+    font-size:15px;
+
+    font-weight:500;
 }
 
 /* --- toast --- */
@@ -993,6 +1170,8 @@
 
     transform:translateX(-50%);
 
+    max-width:min(520px,92vw);
+
     background:var(--surface3);
 
     border:1px solid var(--line);
@@ -1005,6 +1184,8 @@
 
     font-size:12px;
 
+    text-align:center;
+
     z-index:50;
 }
 
@@ -1016,6 +1197,10 @@
 
     .field-pair{
         grid-template-columns:1fr;
+    }
+
+    .expert-filter{
+        width:100%;
     }
 
 }

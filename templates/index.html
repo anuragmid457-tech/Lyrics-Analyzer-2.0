@@ -638,11 +638,15 @@ textarea{
 
     font-family:Newsreader,Georgia,serif;
 
-    font-size:44px;
+    font-size:clamp(28px,3.4vw,30px);
 
-    line-height:1;
+    line-height:1.05;
 
     margin:10px 0 5px;
+
+    overflow-wrap:anywhere;
+
+    hyphens:auto;
 }
 
 .result-sub{
@@ -2863,6 +2867,19 @@ function renderResult(data){
         '</span>'
         +
         '</div>';
+            if(data.canonical_emotion){
+
+        html +=
+
+            '<div class="canonical">'
+            +
+            'canonical · '
+            +
+            escapeHTML(pretty(data.canonical_emotion))
+            +
+            '</div>';
+
+    }
 
 
     html +=
